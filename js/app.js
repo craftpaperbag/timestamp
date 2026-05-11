@@ -36,6 +36,8 @@
     confirmDialog: document.getElementById("confirm-dialog"),
     confirmMessage: document.getElementById("confirm-message"),
     titlesList: document.getElementById("titles-list"),
+    shortcutsList: document.getElementById("shortcuts-list"),
+    iosGuideDialog: document.getElementById("ios-guide-dialog"),
     titleAddInput: document.getElementById("title-add-input"),
     themeRadios: document.querySelectorAll('input[name="theme"]'),
   };
@@ -79,6 +81,7 @@
     state.titles = next;
     save(STORAGE.titles, state.titles);
     renderTitlesList();
+    renderShortcutsList();
     renderTitleButtons();
   };
 
@@ -86,6 +89,7 @@
     state.defaultTitle = title && state.titles.includes(title) ? title : "";
     save(STORAGE.defaultTitle, state.defaultTitle);
     renderTitlesList();
+    renderShortcutsList();
     renderTitleButtons();
   };
 
@@ -233,25 +237,6 @@
       return;
     }
 
-    const noneLi = document.createElement("li");
-    noneLi.className = "title-row title-row--none";
-    const noneLabel = document.createElement("label");
-    noneLabel.className = "title-row__default";
-    const noneRadio = document.createElement("input");
-    noneRadio.type = "radio";
-    noneRadio.name = "default-title";
-    noneRadio.value = "";
-    noneRadio.checked = !state.defaultTitle;
-    noneRadio.addEventListener("change", () => {
-      if (noneRadio.checked) setDefaultTitle("");
-    });
-    const noneText = document.createElement("span");
-    noneText.className = "title-row__default-text";
-    noneText.textContent = "デフォルトなし";
-    noneLabel.append(noneRadio, noneText);
-    noneLi.appendChild(noneLabel);
-    els.titlesList.appendChild(noneLi);
-
     for (const title of orderedTitles()) {
       const index = state.titles.indexOf(title);
       const li = document.createElement("li");
@@ -300,6 +285,7 @@
           save(STORAGE.defaultTitle, state.defaultTitle);
         }
         renderTitlesList();
+        renderShortcutsList();
         renderTitleButtons();
       });
 
@@ -333,11 +319,65 @@
           save(STORAGE.defaultTitle, state.defaultTitle);
         }
         renderTitlesList();
+        renderShortcutsList();
         renderTitleButtons();
       });
 
       li.append(defaultLabel, input, upBtn, downBtn, removeBtn);
       els.titlesList.appendChild(li);
+    }
+
+    const noneLi = document.createElement("li");
+    noneLi.className = "title-row title-row--none";
+    const noneLabel = document.createElement("label");
+    noneLabel.className = "title-row__default title-row__default--sub";
+    const noneRadio = document.createElement("input");
+    noneRadio.type = "radio";
+    noneRadio.name = "default-title";
+    noneRadio.value = "";
+    noneRadio.checked = !state.defaultTitle;
+    noneRadio.addEventListener("change", () => {
+      if (noneRadio.checked) setDefaultTitle("");
+    });
+    const noneText = document.createElement("span");
+    noneText.className = "title-row__default-text";
+    noneText.textContent = "デフォルトを使わない";
+    noneLabel.append(noneRadio, noneText);
+    noneLi.appendChild(noneLabel);
+    els.titlesList.appendChild(noneLi);
+  };
+
+  const renderShortcutsList = () => {
+    if (!els.shortcutsList) return;
+    els.shortcutsList.replaceChildren();
+    if (state.titles.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty-note";
+      li.textContent = "タイトルがありません。先にタイトルを追加してください。";
+      els.shortcutsList.appendChild(li);
+      return;
+    }
+    for (const title of orderedTitles()) {
+      const li = document.createElement("li");
+      li.className = "shortcut-row";
+
+      const name = document.createElement("span");
+      name.className = "shortcut-row__title";
+      name.textContent = title;
+
+      const url = document.createElement("code");
+      url.className = "shortcut-row__url";
+      url.textContent = shortcutUrlFor(title);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "btn btn--small";
+      copyBtn.textContent = "URLをコピー";
+      copyBtn.setAttribute("aria-label", `${title} のURLをコピー`);
+      copyBtn.addEventListener("click", () => copyShortcutUrl(title));
+
+      li.append(name, url, copyBtn);
+      els.shortcutsList.appendChild(li);
     }
   };
 
@@ -470,7 +510,53 @@
     save(STORAGE.titles, state.titles);
     els.titleAddInput.value = "";
     renderTitlesList();
+    renderShortcutsList();
     renderTitleButtons();
+  };
+
+  // ---- shortcut URL ----
+  const shortcutUrlFor = (title) => {
+    const base = window.location.origin + window.location.pathname;
+    return `${base}?record=${encodeURIComponent(title)}`;
+  };
+
+  const handleShortcutParam = () => {
+    let title;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      title = params.get("record");
+    } catch {
+      return false;
+    }
+    if (!title) return false;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("record");
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    } catch {
+      // best effort
+    }
+    if (!state.titles.includes(title)) {
+      showToast(`未登録のタイトルです: ${title}`);
+      return true;
+    }
+    try {
+      sessionStorage.setItem(SESSION_KEY_AUTO_RECORDED, "1");
+    } catch {
+      // best effort
+    }
+    recordTitle(title, "auto");
+    return true;
+  };
+
+  const copyShortcutUrl = async (title) => {
+    const url = shortcutUrlFor(title);
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast(`URLをコピーしました: ${title}`);
+    } catch {
+      showToast("コピーに失敗しました");
+    }
   };
 
   // ---- auto record ----
@@ -512,8 +598,12 @@
       switch (action) {
         case "open-settings":
           renderTitlesList();
+          renderShortcutsList();
           renderThemeRadios();
           els.settingsDialog.showModal();
+          break;
+        case "open-ios-guide":
+          if (els.iosGuideDialog) els.iosGuideDialog.showModal();
           break;
         case "open-manual":
           renderTitleButtons();
@@ -564,8 +654,13 @@
     const savedTitles = load(STORAGE.titles, null);
     state.titles = Array.isArray(savedTitles) ? savedTitles : DEFAULT_TITLES.slice();
     if (savedTitles == null) save(STORAGE.titles, state.titles);
-    const savedDefault = load(STORAGE.defaultTitle, "");
-    state.defaultTitle = typeof savedDefault === "string" ? savedDefault : "";
+    const savedDefault = load(STORAGE.defaultTitle, null);
+    if (savedDefault === null) {
+      state.defaultTitle = state.titles[0] || "";
+      save(STORAGE.defaultTitle, state.defaultTitle);
+    } else {
+      state.defaultTitle = typeof savedDefault === "string" ? savedDefault : "";
+    }
     clearDefaultIfMissing();
     state.theme = load(STORAGE.theme, "auto");
     applyTheme(state.theme);
@@ -574,7 +669,8 @@
     renderHistory();
     setEnvLabel();
     wire();
-    maybeAutoRecord();
+    const handled = handleShortcutParam();
+    if (!handled) maybeAutoRecord();
 
     if (!load(STORAGE.seenIntro, false)) {
       els.infoDialog.showModal();
