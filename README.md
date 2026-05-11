@@ -6,8 +6,8 @@
 
 - 本番 (main): https://craftpaperbag.github.io/timestamp/
 
-> `main` ブランチに push すると `.github/workflows/pages.yml` が走り、
-> GitHub Pages にデプロイされます。
+> `main` ブランチに push すると、GitHub Pages がブランチの内容を
+> そのまま配信します (Source: `Deploy from a branch` / `main` / `/ (root)`)。
 > 動作確認は本番デプロイ前にローカルの軽量 web サーバーで行ってください
 > (下記「ローカルでの確認」を参照)。
 
@@ -45,10 +45,11 @@ python3 -m http.server -d . 8000
 
 ## GitHub Pages の初期設定 (リポジトリオーナー向け)
 
-1. `Settings` → `Pages` で **Source** を **GitHub Actions** に切り替える
-2. `main` に push すると `.github/workflows/pages.yml` が走り、
-   サイトを Pages にデプロイします
-3. 初回は Pages の有効化に数分かかることがあります
+1. `Settings` → `Pages` で **Source** を **Deploy from a branch** にする
+2. Branch を `main` / `/ (root)` に設定して保存する
+3. `main` に push すると、その内容がそのまま Pages に公開されます
+   (リポジトリ直下に `.nojekyll` を置いて Jekyll 処理を無効化済み)
+4. 初回は Pages の有効化に数分かかることがあります
 
 ## ライセンス
 
