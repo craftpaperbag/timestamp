@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - staging
   workflow_dispatch:
 
 concurrency:
@@ -20,25 +19,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
-          path: main
-
-      - name: Checkout staging
-        uses: actions/checkout@v4
-        with:
-          ref: staging
-          path: staging
 
       - name: Assemble site
         run: |
           set -euo pipefail
           mkdir -p _site
-          rsync -a --exclude='.git' --exclude='.github' main/ _site/
-          mkdir -p _site/staging
-          rsync -a --exclude='.git' --exclude='.github' staging/ _site/staging/
+          rsync -a --exclude='.git' --exclude='.github' ./ _site/
           touch _site/.nojekyll
 
       - name: Upload artifact
