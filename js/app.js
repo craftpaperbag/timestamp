@@ -4,15 +4,19 @@
   const STORAGE = {
     records: "timestamp.records",
     titles: "timestamp.titles",
+    defaultTitle: "timestamp.defaultTitle",
     theme: "timestamp.theme",
     seenIntro: "timestamp.seenIntro",
   };
+
+  const SESSION_KEY_AUTO_RECORDED = "timestamp.autoRecorded";
 
   const DEFAULT_TITLES = ["頭痛薬", "コーヒー", "目薬"];
 
   const state = {
     records: [],
     titles: [],
+    defaultTitle: "",
     theme: "auto",
   };
 
@@ -25,6 +29,7 @@
     envLabel: document.getElementById("env-label"),
     toast: document.getElementById("toast"),
     settingsDialog: document.getElementById("settings-dialog"),
+    manualDialog: document.getElementById("manual-dialog"),
     editDialog: document.getElementById("edit-dialog"),
     editForm: document.getElementById("edit-form"),
     infoDialog: document.getElementById("info-dialog"),
@@ -58,6 +63,38 @@
   // ---- utilities ----
   const uid = () =>
     `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const orderedTitles = () => {
+    const def = state.defaultTitle;
+    if (!def || !state.titles.includes(def)) return state.titles.slice();
+    return [def, ...state.titles.filter((t) => t !== def)];
+  };
+
+  const swapTitles = (i, j) => {
+    if (i < 0 || j < 0 || i >= state.titles.length || j >= state.titles.length) {
+      return;
+    }
+    const next = state.titles.slice();
+    [next[i], next[j]] = [next[j], next[i]];
+    state.titles = next;
+    save(STORAGE.titles, state.titles);
+    renderTitlesList();
+    renderTitleButtons();
+  };
+
+  const setDefaultTitle = (title) => {
+    state.defaultTitle = title && state.titles.includes(title) ? title : "";
+    save(STORAGE.defaultTitle, state.defaultTitle);
+    renderTitlesList();
+    renderTitleButtons();
+  };
+
+  const clearDefaultIfMissing = () => {
+    if (state.defaultTitle && !state.titles.includes(state.defaultTitle)) {
+      state.defaultTitle = "";
+      save(STORAGE.defaultTitle, state.defaultTitle);
+    }
+  };
 
   const formatDateTime = (iso) => {
     const d = new Date(iso);
@@ -111,13 +148,21 @@
       return;
     }
     els.titleEmpty.hidden = true;
-    for (const title of state.titles) {
+    for (const title of orderedTitles()) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "title-button";
+      if (title === state.defaultTitle) {
+        btn.classList.add("title-button--default");
+      }
       btn.textContent = title;
       btn.setAttribute("aria-label", `${title} を記録`);
-      btn.addEventListener("click", () => recordTitle(title));
+      btn.addEventListener("click", () => {
+        recordTitle(title, "manual");
+        if (els.manualDialog && els.manualDialog.open) {
+          els.manualDialog.close();
+        }
+      });
       els.titleButtons.appendChild(btn);
     }
   };
@@ -139,7 +184,17 @@
 
       const title = document.createElement("div");
       title.className = "history-item__title";
-      title.textContent = rec.title;
+      const titleText = document.createElement("span");
+      titleText.className = "history-item__title-text";
+      titleText.textContent = rec.title;
+      title.appendChild(titleText);
+      if (rec.source === "auto") {
+        const badge = document.createElement("span");
+        badge.className = "badge badge--auto";
+        badge.textContent = "自動";
+        badge.setAttribute("aria-label", "自動で記録された項目");
+        title.appendChild(badge);
+      }
 
       const time = document.createElement("div");
       time.className = "history-item__time";
@@ -177,9 +232,47 @@
       els.titlesList.appendChild(li);
       return;
     }
-    state.titles.forEach((title, index) => {
+
+    const noneLi = document.createElement("li");
+    noneLi.className = "title-row title-row--none";
+    const noneLabel = document.createElement("label");
+    noneLabel.className = "title-row__default";
+    const noneRadio = document.createElement("input");
+    noneRadio.type = "radio";
+    noneRadio.name = "default-title";
+    noneRadio.value = "";
+    noneRadio.checked = !state.defaultTitle;
+    noneRadio.addEventListener("change", () => {
+      if (noneRadio.checked) setDefaultTitle("");
+    });
+    const noneText = document.createElement("span");
+    noneText.className = "title-row__default-text";
+    noneText.textContent = "デフォルトなし";
+    noneLabel.append(noneRadio, noneText);
+    noneLi.appendChild(noneLabel);
+    els.titlesList.appendChild(noneLi);
+
+    for (const title of orderedTitles()) {
+      const index = state.titles.indexOf(title);
       const li = document.createElement("li");
       li.className = "title-row";
+      if (title === state.defaultTitle) li.classList.add("title-row--default");
+
+      const defaultLabel = document.createElement("label");
+      defaultLabel.className = "title-row__default";
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "default-title";
+      radio.value = title;
+      radio.checked = title === state.defaultTitle;
+      radio.setAttribute("aria-label", `${title} をデフォルトに設定`);
+      radio.addEventListener("change", () => {
+        if (radio.checked) setDefaultTitle(title);
+      });
+      const defaultText = document.createElement("span");
+      defaultText.className = "visually-hidden";
+      defaultText.textContent = "デフォルト";
+      defaultLabel.append(radio, defaultText);
 
       const input = document.createElement("input");
       input.type = "text";
@@ -194,17 +287,37 @@
           showToast("空のタイトルは保存できません");
           return;
         }
-        if (
-          state.titles.some((t, i) => i !== index && t === next)
-        ) {
+        if (state.titles.some((t, i) => i !== index && t === next)) {
           input.value = state.titles[index];
           showToast("同じタイトルが既にあります");
           return;
         }
+        const prev = state.titles[index];
         state.titles[index] = next;
         save(STORAGE.titles, state.titles);
+        if (state.defaultTitle === prev) {
+          state.defaultTitle = next;
+          save(STORAGE.defaultTitle, state.defaultTitle);
+        }
+        renderTitlesList();
         renderTitleButtons();
       });
+
+      const upBtn = document.createElement("button");
+      upBtn.type = "button";
+      upBtn.className = "btn btn--small title-row__reorder";
+      upBtn.textContent = "↑";
+      upBtn.setAttribute("aria-label", `${title} を上へ`);
+      upBtn.disabled = index <= 0;
+      upBtn.addEventListener("click", () => swapTitles(index, index - 1));
+
+      const downBtn = document.createElement("button");
+      downBtn.type = "button";
+      downBtn.className = "btn btn--small title-row__reorder";
+      downBtn.textContent = "↓";
+      downBtn.setAttribute("aria-label", `${title} を下へ`);
+      downBtn.disabled = index >= state.titles.length - 1;
+      downBtn.addEventListener("click", () => swapTitles(index, index + 1));
 
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
@@ -212,15 +325,20 @@
       removeBtn.textContent = "削除";
       removeBtn.setAttribute("aria-label", `${title} を削除`);
       removeBtn.addEventListener("click", () => {
+        const removed = state.titles[index];
         state.titles.splice(index, 1);
         save(STORAGE.titles, state.titles);
+        if (state.defaultTitle === removed) {
+          state.defaultTitle = "";
+          save(STORAGE.defaultTitle, state.defaultTitle);
+        }
         renderTitlesList();
         renderTitleButtons();
       });
 
-      li.append(input, removeBtn);
+      li.append(defaultLabel, input, upBtn, downBtn, removeBtn);
       els.titlesList.appendChild(li);
-    });
+    }
   };
 
   const renderThemeRadios = () => {
@@ -230,12 +348,21 @@
   };
 
   // ---- actions ----
-  const recordTitle = (title) => {
-    const record = { id: uid(), title, at: new Date().toISOString() };
+  const recordTitle = (title, source = "manual") => {
+    const record = {
+      id: uid(),
+      title,
+      at: new Date().toISOString(),
+      source,
+    };
     state.records.push(record);
     save(STORAGE.records, state.records);
     renderHistory();
-    showToast(`記録しました: ${title}`);
+    showToast(
+      source === "auto"
+        ? `自動で記録しました: ${title}`
+        : `記録しました: ${title}`
+    );
   };
 
   const openEdit = (id) => {
@@ -346,6 +473,26 @@
     renderTitleButtons();
   };
 
+  // ---- auto record ----
+  const maybeAutoRecord = () => {
+    let already = null;
+    try {
+      already = sessionStorage.getItem(SESSION_KEY_AUTO_RECORDED);
+    } catch {
+      return;
+    }
+    if (already) return;
+    if (!state.defaultTitle || !state.titles.includes(state.defaultTitle)) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(SESSION_KEY_AUTO_RECORDED, "1");
+    } catch {
+      return;
+    }
+    recordTitle(state.defaultTitle, "auto");
+  };
+
   // ---- environment label ----
   const setEnvLabel = () => {
     const path = window.location.pathname;
@@ -367,6 +514,10 @@
           renderTitlesList();
           renderThemeRadios();
           els.settingsDialog.showModal();
+          break;
+        case "open-manual":
+          renderTitleButtons();
+          if (els.manualDialog) els.manualDialog.showModal();
           break;
         case "open-info":
           els.infoDialog.showModal();
@@ -413,6 +564,9 @@
     const savedTitles = load(STORAGE.titles, null);
     state.titles = Array.isArray(savedTitles) ? savedTitles : DEFAULT_TITLES.slice();
     if (savedTitles == null) save(STORAGE.titles, state.titles);
+    const savedDefault = load(STORAGE.defaultTitle, "");
+    state.defaultTitle = typeof savedDefault === "string" ? savedDefault : "";
+    clearDefaultIfMissing();
     state.theme = load(STORAGE.theme, "auto");
     applyTheme(state.theme);
 
@@ -420,6 +574,7 @@
     renderHistory();
     setEnvLabel();
     wire();
+    maybeAutoRecord();
 
     if (!load(STORAGE.seenIntro, false)) {
       els.infoDialog.showModal();
