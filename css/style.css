@@ -3,7 +3,7 @@
  * デジタル庁デザインシステム (DADS) のトークンに準拠。
  * トークンは ./tokens.css を参照。
  */
-@import url("./tokens.css");
+@import url("./tokens.css?v=2026-05-12-dads");
 
 :root {
   color-scheme: light dark;
