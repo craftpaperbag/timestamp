@@ -40,24 +40,19 @@
     <main id="main" class="app-main">
       <section aria-labelledby="record-heading">
         <h2 id="record-heading" class="section-heading">記録する</h2>
-        <p class="hint">ボタンをタップした「いま」の日時を記録します。</p>
-        <div
-          id="title-buttons"
-          class="title-buttons"
-          role="group"
-          aria-label="記録ボタン"
-        ></div>
-        <p
-          id="title-empty"
-          class="empty-note"
-          hidden
-        >
-          記録ボタンがありません。
-          <button type="button" class="link-btn" data-action="open-settings">
-            設定からタイトルを追加してください
-          </button>
-          。
+        <p class="hint">
+          サイトを開くと、デフォルトのタイトルで「いま」が自動的に記録されます。
+          別のタイトルで記録するには手動記録を開いてください。
         </p>
+        <div class="manual-trigger">
+          <button
+            type="button"
+            class="btn btn--primary btn--record"
+            data-action="open-manual"
+          >
+            手動で記録
+          </button>
+        </div>
       </section>
 
       <section aria-labelledby="history-heading">
@@ -174,6 +169,45 @@
 
         <footer class="dialog__footer">
           <button type="submit" class="btn btn--primary">閉じる</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <!-- Manual record modal -->
+    <dialog id="manual-dialog" class="dialog" aria-labelledby="manual-title">
+      <form method="dialog" class="dialog__form">
+        <header class="dialog__header">
+          <h2 id="manual-title" class="dialog__title">手動で記録</h2>
+          <button
+            type="button"
+            class="icon-btn"
+            data-action="close-dialog"
+            aria-label="閉じる"
+          >
+            <span aria-hidden="true">×</span>
+            <span class="icon-btn__label">閉じる</span>
+          </button>
+        </header>
+
+        <div class="dialog__body">
+          <p class="hint">タイトルをタップして「いま」を記録します。</p>
+          <div
+            id="title-buttons"
+            class="title-buttons"
+            role="group"
+            aria-label="記録ボタン"
+          ></div>
+          <p id="title-empty" class="empty-note" hidden>
+            記録ボタンがありません。
+            <button type="button" class="link-btn" data-action="open-settings">
+              設定からタイトルを追加してください
+            </button>
+            。
+          </p>
+        </div>
+
+        <footer class="dialog__footer">
+          <button type="submit" class="btn btn--ghost">閉じる</button>
         </footer>
       </form>
     </dialog>
