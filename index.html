@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#b23a48" />
+    <title>timestamp</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">本文へスキップ</a>
+
+    <header class="app-header">
+      <h1 class="app-title">timestamp</h1>
+      <div class="app-header__actions">
+        <button
+          type="button"
+          class="icon-btn"
+          data-action="open-info"
+          aria-label="このアプリについて"
+          title="このアプリについて"
+        >
+          <span aria-hidden="true">?</span>
+          <span class="icon-btn__label">情報</span>
+        </button>
+        <button
+          type="button"
+          class="icon-btn"
+          data-action="open-settings"
+          aria-label="設定を開く"
+          title="設定を開く"
+        >
+          <span aria-hidden="true">⚙</span>
+          <span class="icon-btn__label">設定</span>
+        </button>
+      </div>
+    </header>
+
+    <main id="main" class="app-main">
+      <section aria-labelledby="record-heading">
+        <h2 id="record-heading" class="section-heading">記録する</h2>
+        <p class="hint">ボタンをタップした「いま」の日時を記録します。</p>
+        <div
+          id="title-buttons"
+          class="title-buttons"
+          role="group"
+          aria-label="記録ボタン"
+        ></div>
+        <p
+          id="title-empty"
+          class="empty-note"
+          hidden
+        >
+          記録ボタンがありません。
+          <button type="button" class="link-btn" data-action="open-settings">
+            設定からタイトルを追加してください
+          </button>
+          。
+        </p>
+      </section>
+
+      <section aria-labelledby="history-heading">
+        <div class="section-header">
+          <h2 id="history-heading" class="section-heading">履歴</h2>
+          <span id="history-count" class="muted" aria-live="polite">0件</span>
+        </div>
+        <ul id="history-list" class="history-list" aria-live="polite"></ul>
+        <p id="history-empty" class="empty-note">まだ記録はありません。</p>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span id="env-label" class="muted"></span>
+      <a
+        class="muted"
+        href="https://github.com/craftpaperbag/timestamp"
+        target="_blank"
+        rel="noopener noreferrer"
+        >ソースコード</a
+      >
+    </footer>
+
+    <!-- Toast -->
+    <div
+      id="toast"
+      class="toast"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+
+    <!-- Settings modal -->
+    <dialog id="settings-dialog" class="dialog" aria-labelledby="settings-title">
+      <form method="dialog" class="dialog__form">
+        <header class="dialog__header">
+          <h2 id="settings-title" class="dialog__title">設定</h2>
+          <button
+            type="button"
+            class="icon-btn"
+            data-action="close-dialog"
+            aria-label="設定を閉じる"
+          >
+            <span aria-hidden="true">×</span>
+            <span class="icon-btn__label">閉じる</span>
+          </button>
+        </header>
+
+        <div class="dialog__body">
+          <section class="settings-group" aria-labelledby="settings-titles">
+            <h3 id="settings-titles" class="settings-group__title">
+              タイトル
+            </h3>
+            <p class="hint">
+              事前に登録したタイトルが、記録ボタンとして表示されます。
+            </p>
+            <ul id="titles-list" class="titles-list"></ul>
+            <div class="title-add">
+              <label class="visually-hidden" for="title-add-input"
+                >追加するタイトル</label
+              >
+              <input
+                id="title-add-input"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                maxlength="32"
+                placeholder="例: 水を飲んだ"
+              />
+              <button type="button" class="btn" data-action="add-title">
+                追加
+              </button>
+            </div>
+          </section>
+
+          <section class="settings-group" aria-labelledby="settings-theme">
+            <h3 id="settings-theme" class="settings-group__title">表示</h3>
+            <fieldset class="theme-select">
+              <legend class="visually-hidden">表示モード</legend>
+              <label>
+                <input type="radio" name="theme" value="auto" />
+                <span>自動 (OSに合わせる)</span>
+              </label>
+              <label>
+                <input type="radio" name="theme" value="light" />
+                <span>ライト</span>
+              </label>
+              <label>
+                <input type="radio" name="theme" value="dark" />
+                <span>ダーク</span>
+              </label>
+            </fieldset>
+          </section>
+
+          <section class="settings-group" aria-labelledby="settings-data">
+            <h3 id="settings-data" class="settings-group__title">データ</h3>
+            <p class="hint">
+              記録はこのブラウザにのみ保存されます。サーバーには送信されません。
+            </p>
+            <div class="settings-actions">
+              <button type="button" class="btn" data-action="export-json">
+                JSONエクスポート
+              </button>
+              <button
+                type="button"
+                class="btn btn--danger"
+                data-action="delete-all"
+              >
+                全件削除
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <footer class="dialog__footer">
+          <button type="submit" class="btn btn--primary">閉じる</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <!-- Edit modal -->
+    <dialog id="edit-dialog" class="dialog" aria-labelledby="edit-title">
+      <form id="edit-form" method="dialog" class="dialog__form">
+        <header class="dialog__header">
+          <h2 id="edit-title" class="dialog__title">記録を編集</h2>
+          <button
+            type="button"
+            class="icon-btn"
+            data-action="close-dialog"
+            aria-label="編集を閉じる"
+          >
+            <span aria-hidden="true">×</span>
+            <span class="icon-btn__label">閉じる</span>
+          </button>
+        </header>
+
+        <div class="dialog__body">
+          <input type="hidden" name="id" />
+          <label class="field">
+            <span class="field__label">タイトル</span>
+            <input name="title" type="text" maxlength="64" required />
+          </label>
+          <label class="field">
+            <span class="field__label">日時</span>
+            <input name="at" type="datetime-local" step="1" required />
+          </label>
+        </div>
+
+        <footer class="dialog__footer dialog__footer--split">
+          <button
+            type="button"
+            class="btn btn--ghost"
+            data-action="close-dialog"
+          >
+            キャンセル
+          </button>
+          <button type="submit" class="btn btn--primary" value="save">
+            保存
+          </button>
+        </footer>
+      </form>
+    </dialog>
+
+    <!-- Info modal -->
+    <dialog id="info-dialog" class="dialog" aria-labelledby="info-title">
+      <form method="dialog" class="dialog__form">
+        <header class="dialog__header">
+          <h2 id="info-title" class="dialog__title">このアプリについて</h2>
+          <button
+            type="button"
+            class="icon-btn"
+            data-action="close-dialog"
+            aria-label="閉じる"
+          >
+            <span aria-hidden="true">×</span>
+            <span class="icon-btn__label">閉じる</span>
+          </button>
+        </header>
+
+        <div class="dialog__body">
+          <p>
+            <strong>timestamp</strong> は、ワンタップで「いま」を記録するための
+            簡素な Web アプリです。
+          </p>
+          <ul class="info-list">
+            <li>
+              ソースコードは
+              <a
+                href="https://github.com/craftpaperbag/timestamp"
+                target="_blank"
+                rel="noopener noreferrer"
+                >GitHub</a
+              >
+              で公開されています。
+            </li>
+            <li>
+              記録はこのブラウザの <code>localStorage</code> にのみ保存されます。
+              端末を変えると引き継がれません。サーバー送信もありません。
+            </li>
+            <li role="alert" class="warning">
+              タイトルには
+              <strong>個人情報・機密情報を入力しないでください</strong>。
+              ブラウザ拡張や端末を共有する他者から見える可能性があります。
+            </li>
+          </ul>
+        </div>
+
+        <footer class="dialog__footer">
+          <button type="submit" class="btn btn--primary">わかりました</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <!-- Confirm modal -->
+    <dialog id="confirm-dialog" class="dialog" aria-labelledby="confirm-title">
+      <form method="dialog" class="dialog__form">
+        <header class="dialog__header">
+          <h2 id="confirm-title" class="dialog__title">確認</h2>
+        </header>
+        <div class="dialog__body">
+          <p id="confirm-message"></p>
+        </div>
+        <footer class="dialog__footer dialog__footer--split">
+          <button type="submit" class="btn btn--ghost" value="cancel">
+            キャンセル
+          </button>
+          <button type="submit" class="btn btn--danger" value="ok">
+            実行
+          </button>
+        </footer>
+      </form>
+    </dialog>
+
+    <script src="./js/app.js" defer></script>
+  </body>
+</html>
