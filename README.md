@@ -6,8 +6,8 @@
 
 - 本番 (main): https://craftpaperbag.github.io/timestamp/
 
-> `main` ブランチに push すると `.github/workflows/pages.yml` が走り、
-> GitHub Pages にデプロイされます。
+> `main` ブランチに push すると、GitHub Pages がブランチの内容を
+> そのまま配信します (Source: `Deploy from a branch` / `main` / `/ (root)`)。
 > 動作確認は本番デプロイ前にローカルの軽量 web サーバーで行ってください
 > (下記「ローカルでの確認」を参照)。
 
@@ -17,9 +17,13 @@
   タップするだけで、その瞬間の日時を記録します。
 - 記録は新しい順に表示され、いつでも編集・個別削除・全件削除が可能です。
 - 記録を JSON ファイルとして書き出せます。
-- 落ち着いた赤を基調に、角丸と余白を活かした柔らかいデザイン。
+- [デジタル庁デザインシステム (DADS)](https://design.digital.go.jp/dads/)
+  に準拠したカラー・タイポグラフィ・余白・角丸・エレベーション。
+  デザイントークンは公式の
+  [`@digital-go-jp/design-tokens`](https://github.com/digital-go-jp/design-tokens)
+  (MIT) より抜粋。
 - ライト/ダーク/自動の3種類の表示モード。
-- グレースケールでも判別できる配色と、大きめのタップ領域。
+- グレースケールでも判別できる配色と、大きめのタップ領域 (最低 44px)。
 
 ## データの取り扱い
 
@@ -45,10 +49,11 @@ python3 -m http.server -d . 8000
 
 ## GitHub Pages の初期設定 (リポジトリオーナー向け)
 
-1. `Settings` → `Pages` で **Source** を **GitHub Actions** に切り替える
-2. `main` に push すると `.github/workflows/pages.yml` が走り、
-   サイトを Pages にデプロイします
-3. 初回は Pages の有効化に数分かかることがあります
+1. `Settings` → `Pages` で **Source** を **Deploy from a branch** にする
+2. Branch を `main` / `/ (root)` に設定して保存する
+3. `main` に push すると、その内容がそのまま Pages に公開されます
+   (リポジトリ直下に `.nojekyll` を置いて Jekyll 処理を無効化済み)
+4. 初回は Pages の有効化に数分かかることがあります
 
 ## ライセンス
 
