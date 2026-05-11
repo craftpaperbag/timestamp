@@ -26,7 +26,6 @@
     historyList: document.getElementById("history-list"),
     historyEmpty: document.getElementById("history-empty"),
     historyCount: document.getElementById("history-count"),
-    envLabel: document.getElementById("env-label"),
     toast: document.getElementById("toast"),
     settingsDialog: document.getElementById("settings-dialog"),
     manualDialog: document.getElementById("manual-dialog"),
@@ -493,16 +492,6 @@
     recordTitle(state.defaultTitle, "auto");
   };
 
-  // ---- environment label ----
-  const setEnvLabel = () => {
-    const path = window.location.pathname;
-    if (/\/staging\/?($|index\.html)/.test(path)) {
-      els.envLabel.textContent = "staging";
-    } else {
-      els.envLabel.textContent = "";
-    }
-  };
-
   // ---- event wiring ----
   const wire = () => {
     document.body.addEventListener("click", (event) => {
@@ -572,7 +561,6 @@
 
     renderTitleButtons();
     renderHistory();
-    setEnvLabel();
     wire();
     maybeAutoRecord();
 

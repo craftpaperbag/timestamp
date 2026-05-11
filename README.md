@@ -5,10 +5,11 @@
 ## 公開URL
 
 - 本番 (main): https://craftpaperbag.github.io/timestamp/
-- 動作確認 (staging): https://craftpaperbag.github.io/timestamp/staging/
 
-> どちらも GitHub Pages 上の同一サイト内に共存しており、`main` ブランチが
-> `/`、`staging` ブランチが `/staging/` で公開されます。
+> `main` ブランチに push すると `.github/workflows/pages.yml` が走り、
+> GitHub Pages にデプロイされます。
+> 動作確認は本番デプロイ前にローカルの軽量 web サーバーで行ってください
+> (下記「ローカルでの確認」を参照)。
 
 ## 特長
 
@@ -31,18 +32,22 @@
 
 ## ローカルでの確認
 
-ビルド不要の静的サイトです。任意の HTTP サーバーで配信できます。
+ビルド不要の静的サイトです。本番に反映する前に、ローカルの軽量 web サーバーで
+動作確認してください。任意の HTTP サーバーで配信できます。
 
 ```sh
 python3 -m http.server -d . 8000
 # → http://localhost:8000 を開く
 ```
 
+> `file://` で直接開くと一部ブラウザでモジュールや fetch が動かないため、
+> 必ず HTTP サーバー越しに開いてください。
+
 ## GitHub Pages の初期設定 (リポジトリオーナー向け)
 
 1. `Settings` → `Pages` で **Source** を **GitHub Actions** に切り替える
-2. `main` または `staging` に push すると `.github/workflows/pages.yml` が
-   走り、両ブランチを束ねたサイトを Pages にデプロイします
+2. `main` に push すると `.github/workflows/pages.yml` が走り、
+   サイトを Pages にデプロイします
 3. 初回は Pages の有効化に数分かかることがあります
 
 ## ライセンス
