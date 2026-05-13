@@ -387,6 +387,13 @@ a:hover {
   gap: var(--space-1);
 }
 
+.history-toggle {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-1);
+}
+
 /* Buttons (DADS: 角丸 8px, 最小タップ領域 44px) */
 .btn {
   font: inherit;

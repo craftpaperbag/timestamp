@@ -13,11 +13,14 @@
 
   const DEFAULT_TITLES = ["頭痛薬", "コーヒー", "目薬"];
 
+  const HISTORY_PREVIEW_COUNT = 3;
+
   const state = {
     records: [],
     titles: [],
     defaultTitle: "",
     theme: "auto",
+    historyExpanded: false,
   };
 
   const els = {
@@ -170,6 +173,7 @@
     els.historyList.replaceChildren();
     els.historyCount.textContent = `${state.records.length}件`;
     if (state.records.length === 0) {
+      state.historyExpanded = false;
       els.historyEmpty.hidden = false;
       return;
     }
@@ -177,7 +181,13 @@
     const sorted = [...state.records].sort(
        (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()
     );
-    for (const rec of sorted) {
+    const hasOverflow = sorted.length > HISTORY_PREVIEW_COUNT;
+    if (!hasOverflow) state.historyExpanded = false;
+    const visible =
+      state.historyExpanded || !hasOverflow
+        ? sorted
+        : sorted.slice(0, HISTORY_PREVIEW_COUNT);
+    for (const rec of visible) {
       const li = document.createElement("li");
       li.className = "history-item";
 
@@ -219,6 +229,28 @@
       actions.append(editBtn, deleteBtn);
       li.append(title, time, actions);
       els.historyList.appendChild(li);
+    }
+
+    if (hasOverflow) {
+      const toggleLi = document.createElement("li");
+      toggleLi.className = "history-toggle";
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = "btn btn--ghost history-toggle__btn";
+      toggleBtn.setAttribute("aria-expanded", String(state.historyExpanded));
+      toggleBtn.setAttribute("aria-controls", "history-list");
+      if (state.historyExpanded) {
+        toggleBtn.textContent = "折りたたむ";
+      } else {
+        const remaining = sorted.length - HISTORY_PREVIEW_COUNT;
+        toggleBtn.textContent = `もっと見る (残り${remaining}件)`;
+      }
+      toggleBtn.addEventListener("click", () => {
+        state.historyExpanded = !state.historyExpanded;
+        renderHistory();
+      });
+      toggleLi.appendChild(toggleBtn);
+      els.historyList.appendChild(toggleLi);
     }
   };
 
