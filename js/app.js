@@ -127,9 +127,13 @@
   };
 
   let toastTimer = 0;
-  const showToast = (message) => {
+  const showToast = (message, { variant } = {}) => {
     if (!els.toast) return;
     els.toast.textContent = message;
+    els.toast.classList.remove("toast--prominent");
+    if (variant === "prominent") {
+      els.toast.classList.add("toast--prominent");
+    }
     els.toast.hidden = false;
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => {
@@ -392,7 +396,8 @@
     showToast(
       source === "auto"
         ? `自動で記録しました: ${title}`
-        : `記録しました: ${title}`
+        : `記録しました: ${title}`,
+      source === "auto" ? { variant: "prominent" } : undefined
     );
   };
 
