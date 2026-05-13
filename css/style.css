@@ -115,6 +115,7 @@ html,
 body {
   margin: 0;
   padding: 0;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 
 body {
@@ -792,11 +793,36 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Fixed bottom end-session bar */
+.end-session-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3) var(--space-4)
+    calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid var(--border);
+}
+
+.btn--end-session {
+  width: 100%;
+  max-width: 720px;
+  min-height: 64px;
+  font-size: var(--font-size-18);
+  box-shadow: var(--shadow-md);
+}
+
 /* Toast (DADS: 通知バナーは pill 形・elevation-2) */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+  bottom: calc(112px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   background: var(--color-neutral-solid-gray-900);
   color: var(--color-neutral-white);
