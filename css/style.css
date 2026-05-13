@@ -804,8 +804,27 @@ a:hover {
   z-index: 1000;
 }
 
+.toast--prominent {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-20);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-md);
+  transform-origin: 50% 100%;
+  animation: toast-poyon 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toast-poyon {
+  0%   { transform: translateX(-50%) scale(0.6);  opacity: 0; }
+  55%  { transform: translateX(-50%) scale(1.15); opacity: 1; }
+  75%  { transform: translateX(-50%) scale(0.94); }
+  100% { transform: translateX(-50%) scale(1);    opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+  }
+  .toast--prominent {
+    animation: none !important;
   }
 }
