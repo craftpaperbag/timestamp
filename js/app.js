@@ -492,6 +492,15 @@
     recordTitle(state.defaultTitle, "auto");
   };
 
+  const endSession = () => {
+    try {
+      sessionStorage.removeItem(SESSION_KEY_AUTO_RECORDED);
+    } catch {
+      // sessionStorage 不可な環境では何もしない
+    }
+    showToast("セッションを終了しました。次回起動時に自動記録されます。");
+  };
+
   // ---- event wiring ----
   const wire = () => {
     document.body.addEventListener("click", (event) => {
@@ -521,6 +530,9 @@
           break;
         case "export-json":
           exportJson();
+          break;
+        case "end-session":
+          endSession();
           break;
         case "delete-all":
           deleteAll();
