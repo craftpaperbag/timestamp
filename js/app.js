@@ -557,6 +557,9 @@
         case "open-info":
           els.infoDialog.showModal();
           break;
+        case "scroll-top":
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          break;
         case "close-dialog": {
           const dialog = target.closest("dialog");
           if (dialog) dialog.close();
