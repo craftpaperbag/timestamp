@@ -19,28 +19,35 @@
     <a class="skip-link" href="#main">本文へスキップ</a>
 
     <header class="app-header">
-      <h1 class="app-title">timestamp</h1>
-      <div class="app-header__actions">
-        <button
-          type="button"
-          class="icon-btn"
-          data-action="open-info"
-          aria-label="このアプリについて"
-          title="このアプリについて"
-        >
-          <span aria-hidden="true">?</span>
-          <span class="icon-btn__label">情報</span>
-        </button>
-        <button
-          type="button"
-          class="icon-btn"
-          data-action="open-settings"
-          aria-label="設定を開く"
-          title="設定を開く"
-        >
-          <span aria-hidden="true">⚙</span>
-          <span class="icon-btn__label">設定</span>
-        </button>
+      <div class="app-header__inner">
+        <h1 class="app-title">
+          <button
+            type="button"
+            class="app-title__button"
+            data-action="scroll-top"
+            aria-label="先頭へ戻る"
+          >
+            timestamp
+          </button>
+        </h1>
+        <div class="app-header__actions">
+          <button
+            type="button"
+            class="header-action-btn"
+            data-action="open-info"
+            aria-label="ヘルプを開く"
+          >
+            ヘルプ
+          </button>
+          <button
+            type="button"
+            class="header-action-btn"
+            data-action="open-settings"
+            aria-label="設定を開く"
+          >
+            設定
+          </button>
+        </div>
       </div>
     </header>
 
