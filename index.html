@@ -13,6 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
       rel="stylesheet"
     />
+    <link rel="manifest" href="./manifest.json" />
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
@@ -79,6 +80,16 @@
       </section>
     </main>
 
+    <div class="end-session-area" role="region" aria-label="セッション操作">
+      <button
+        type="button"
+        class="btn btn--primary btn--end-session"
+        data-action="end-session"
+      >
+        閉じる
+      </button>
+    </div>
+
     <footer class="app-footer">
       <a
         class="muted"
@@ -88,16 +99,6 @@
         >ソースコード</a
       >
     </footer>
-
-    <div class="end-session-bar" role="region" aria-label="セッション操作">
-      <button
-        type="button"
-        class="btn btn--primary btn--end-session"
-        data-action="end-session"
-      >
-        閉じる
-      </button>
-    </div>
 
     <!-- Toast -->
     <div
@@ -347,6 +348,24 @@
         </footer>
       </form>
     </dialog>
+
+    <!-- End-session overlay -->
+    <div
+      id="end-session-overlay"
+      class="end-session-overlay"
+      role="alertdialog"
+      aria-labelledby="end-session-overlay-message"
+      aria-modal="true"
+      hidden
+    >
+      <p
+        id="end-session-overlay-message"
+        class="end-session-overlay__message"
+      >
+        timestamp を終了しました。<br />
+        画面を閉じるかアプリを終了してください。
+      </p>
+    </div>
 
     <script src="./js/app.js" defer></script>
   </body>

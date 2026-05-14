@@ -1,0 +1,10 @@
+{
+  "name": "timestamp",
+  "short_name": "timestamp",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0017c1",
+  "lang": "ja"
+}

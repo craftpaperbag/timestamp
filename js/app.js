@@ -40,6 +40,7 @@
     titlesList: document.getElementById("titles-list"),
     titleAddInput: document.getElementById("title-add-input"),
     themeRadios: document.querySelectorAll('input[name="theme"]'),
+    endSessionOverlay: document.getElementById("end-session-overlay"),
   };
 
   // ---- storage helpers ----
@@ -536,6 +537,19 @@
       // sessionStorage 不可な環境では何もしない
     }
     showToast("セッションを終了しました。次回起動時に自動記録されます。");
+
+    if (els.endSessionOverlay) {
+      els.endSessionOverlay.hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+
+    requestAnimationFrame(() => {
+      try {
+        window.close();
+      } catch {
+        // 自動で閉じられない環境ではオーバーレイのメッセージが残る
+      }
+    });
   };
 
   // ---- event wiring ----

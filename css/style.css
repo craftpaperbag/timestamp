@@ -834,21 +834,11 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Fixed bottom end-session bar */
-.end-session-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 900;
+/* End-session button (placed inline at page end) */
+.end-session-area {
   display: flex;
   justify-content: center;
-  padding: var(--space-3) var(--space-4)
-    calc(var(--space-3) + env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-top: 1px solid var(--border);
+  padding: var(--space-4);
 }
 
 .btn--end-session {
@@ -859,11 +849,36 @@ a:hover {
   box-shadow: var(--shadow-md);
 }
 
+/* Full-screen overlay shown after the close button is pressed */
+.end-session-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  text-align: center;
+}
+
+.end-session-overlay[hidden] {
+  display: none;
+}
+
+.end-session-overlay__message {
+  font-size: var(--font-size-18);
+  line-height: 1.6;
+  max-width: 32rem;
+  margin: 0;
+}
+
 /* Toast (DADS: 通知バナーは pill 形・elevation-2) */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(112px + env(safe-area-inset-bottom));
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   background: var(--color-neutral-solid-gray-900);
   color: var(--color-neutral-white);
