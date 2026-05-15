@@ -53,6 +53,37 @@
     </header>
 
     <main id="main" class="app-main">
+      <section aria-labelledby="record-heading">
+        <h2 id="record-heading" class="section-heading">記録する</h2>
+        <p class="hint">
+          ボタンをタップすると、その瞬間の日時が履歴に追加されます。
+        </p>
+        <div
+          id="title-buttons"
+          class="title-buttons"
+          role="group"
+          aria-label="記録ボタン"
+        ></div>
+        <p id="title-empty" class="empty-note" hidden>
+          記録ボタンがありません。下の入力から追加するか、設定からタイトルを管理してください。
+        </p>
+        <form id="quick-add-form" class="quick-add" autocomplete="off">
+          <label class="visually-hidden" for="quick-add-input"
+            >新しいタイトル</label
+          >
+          <input
+            id="quick-add-input"
+            type="text"
+            inputmode="text"
+            maxlength="32"
+            placeholder="新しいタイトルを追加 (例: 水を飲んだ)"
+          />
+          <button type="submit" class="btn" data-action="quick-add-title">
+            追加
+          </button>
+        </form>
+      </section>
+
       <section aria-labelledby="history-heading">
         <div class="section-header">
           <h2 id="history-heading" class="section-heading">履歴</h2>
@@ -61,34 +92,7 @@
         <ul id="history-list" class="history-list" aria-live="polite"></ul>
         <p id="history-empty" class="empty-note">まだ記録はありません。</p>
       </section>
-
-      <section aria-labelledby="record-heading">
-        <h2 id="record-heading" class="section-heading">記録する</h2>
-        <p class="hint">
-          サイトを開くと、デフォルトのタイトルで「いま」が自動的に記録されます。
-          別のタイトルで記録するには手動記録を開いてください。
-        </p>
-        <div class="manual-trigger">
-          <button
-            type="button"
-            class="btn btn--primary btn--record"
-            data-action="open-manual"
-          >
-            手動で記録
-          </button>
-        </div>
-      </section>
     </main>
-
-    <div class="end-session-area" role="region" aria-label="セッション操作">
-      <button
-        type="button"
-        class="btn btn--primary btn--end-session"
-        data-action="end-session"
-      >
-        閉じる
-      </button>
-    </div>
 
     <footer class="app-footer">
       <a
@@ -107,7 +111,15 @@
       role="status"
       aria-live="polite"
       hidden
-    ></div>
+    >
+      <span id="toast-message" class="toast__message"></span>
+      <button
+        id="toast-action"
+        type="button"
+        class="toast__action"
+        hidden
+      ></button>
+    </div>
 
     <!-- Settings modal -->
     <dialog id="settings-dialog" class="dialog" aria-labelledby="settings-title">
@@ -132,6 +144,7 @@
             </h3>
             <p class="hint">
               事前に登録したタイトルが、記録ボタンとして表示されます。
+              ラジオボタンで「起動時に自動で記録するタイトル」を指定できます。
             </p>
             <ul id="titles-list" class="titles-list"></ul>
             <div class="title-add">
@@ -192,46 +205,7 @@
         </div>
 
         <footer class="dialog__footer">
-          <button type="submit" class="btn btn--primary">閉じる</button>
-        </footer>
-      </form>
-    </dialog>
-
-    <!-- Manual record modal -->
-    <dialog id="manual-dialog" class="dialog" aria-labelledby="manual-title">
-      <form method="dialog" class="dialog__form">
-        <header class="dialog__header">
-          <h2 id="manual-title" class="dialog__title">手動で記録</h2>
-          <button
-            type="button"
-            class="icon-btn"
-            data-action="close-dialog"
-            aria-label="閉じる"
-          >
-            <span aria-hidden="true">×</span>
-            <span class="icon-btn__label">閉じる</span>
-          </button>
-        </header>
-
-        <div class="dialog__body">
-          <p class="hint">タイトルをタップして「いま」を記録します。</p>
-          <div
-            id="title-buttons"
-            class="title-buttons"
-            role="group"
-            aria-label="記録ボタン"
-          ></div>
-          <p id="title-empty" class="empty-note" hidden>
-            記録ボタンがありません。
-            <button type="button" class="link-btn" data-action="open-settings">
-              設定からタイトルを追加してください
-            </button>
-            。
-          </p>
-        </div>
-
-        <footer class="dialog__footer">
-          <button type="submit" class="btn btn--ghost">閉じる</button>
+          <button type="submit" class="btn btn--primary">OK</button>
         </footer>
       </form>
     </dialog>
@@ -258,10 +232,25 @@
             <span class="field__label">タイトル</span>
             <input name="title" type="text" maxlength="64" required />
           </label>
-          <label class="field">
-            <span class="field__label">日時</span>
-            <input name="at" type="datetime-local" step="1" required />
-          </label>
+          <div class="field">
+            <span class="field__label" id="edit-at-label">日時</span>
+            <div class="field-row">
+              <input
+                name="at"
+                type="datetime-local"
+                step="1"
+                required
+                aria-labelledby="edit-at-label"
+              />
+              <button
+                type="button"
+                class="btn btn--small"
+                data-action="reset-edit-at"
+              >
+                現在時刻に戻す
+              </button>
+            </div>
+          </div>
         </div>
 
         <footer class="dialog__footer dialog__footer--split">
@@ -296,35 +285,72 @@
         </header>
 
         <div class="dialog__body">
-          <p>
-            <strong>timestamp</strong> は、ワンタップで「いま」を記録するための
-            簡素な Web アプリです。
-          </p>
-          <ul class="info-list">
-            <li>
-              ソースコードは
-              <a
-                href="https://github.com/craftpaperbag/timestamp"
-                target="_blank"
-                rel="noopener noreferrer"
-                >GitHub</a
-              >
-              で公開されています。
-            </li>
-            <li>
-              記録はこのブラウザの <code>localStorage</code> にのみ保存されます。
-              端末を変えると引き継がれません。サーバー送信もありません。
-            </li>
-            <li role="alert" class="warning">
-              タイトルには
-              <strong>個人情報・機密情報を入力しないでください</strong>。
-              ブラウザ拡張や端末を共有する他者から見える可能性があります。
-            </li>
-          </ul>
+          <section class="info-section" aria-labelledby="info-howto">
+            <h3 id="info-howto" class="info-section__title">使い方</h3>
+            <ul class="info-list">
+              <li>
+                メイン画面のタイトルボタンを<strong>ワンタップ</strong>すると、
+                その瞬間の日時が履歴に記録されます。
+              </li>
+              <li>
+                「設定 → タイトル」で<strong>デフォルト</strong>に指定したタイトルは、
+                サイトを開いたときに自動で 1 回だけ記録されます (誤記録は
+                トーストの「取り消す」または履歴の「削除」で戻せます)。
+              </li>
+              <li>
+                履歴の各行から「編集」「削除」ができます。
+                編集画面では「現在時刻に戻す」も使えます。
+              </li>
+              <li>
+                バックアップが必要なときは「設定 → データ → JSONエクスポート」を
+                使ってください。
+              </li>
+              <li>
+                <span id="install-hint"
+                  >ホーム画面に追加するとアプリのように使えます。</span
+                >
+                <button
+                  type="button"
+                  class="btn btn--small"
+                  id="install-button"
+                  data-action="install-app"
+                  hidden
+                >
+                  ホーム画面に追加
+                </button>
+              </li>
+            </ul>
+          </section>
+
+          <section class="info-section" aria-labelledby="info-data">
+            <h3 id="info-data" class="info-section__title">データと注意</h3>
+            <ul class="info-list">
+              <li>
+                ソースコードは
+                <a
+                  href="https://github.com/craftpaperbag/timestamp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >GitHub</a
+                >
+                で公開されています。
+              </li>
+              <li>
+                記録はこのブラウザの
+                <code>localStorage</code> にのみ保存されます。
+                端末を変えると引き継がれません。サーバー送信もありません。
+              </li>
+              <li role="alert" class="warning">
+                タイトルには
+                <strong>個人情報・機密情報を入力しないでください</strong>。
+                ブラウザ拡張や端末を共有する他者から見える可能性があります。
+              </li>
+            </ul>
+          </section>
         </div>
 
         <footer class="dialog__footer">
-          <button type="submit" class="btn btn--primary">わかりました</button>
+          <button type="submit" class="btn btn--primary">閉じる</button>
         </footer>
       </form>
     </dialog>
@@ -349,24 +375,15 @@
       </form>
     </dialog>
 
-    <!-- End-session overlay -->
-    <div
-      id="end-session-overlay"
-      class="end-session-overlay"
-      role="alertdialog"
-      aria-labelledby="end-session-overlay-message"
-      aria-modal="true"
-      hidden
-    >
-      <p
-        id="end-session-overlay-message"
-        class="end-session-overlay__message"
-      >
-        timestamp を終了しました。<br />
-        画面を閉じるかアプリを終了してください。
-      </p>
-    </div>
-
     <script src="./js/app.js" defer></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {
+            /* オフライン対応はベストエフォート */
+          });
+        });
+      }
+    </script>
   </body>
 </html>

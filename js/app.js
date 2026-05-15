@@ -13,7 +13,11 @@
 
   const DEFAULT_TITLES = ["頭痛薬", "コーヒー", "目薬"];
 
-  const HISTORY_PREVIEW_COUNT = 3;
+  const HISTORY_PREVIEW_COUNT = 5;
+
+  const TOAST_DURATION_DEFAULT = 3500;
+  const TOAST_DURATION_PROMINENT = 5500;
+  const TOAST_DURATION_WITH_ACTION = 8000;
 
   const state = {
     records: [],
@@ -21,6 +25,7 @@
     defaultTitle: "",
     theme: "auto",
     historyExpanded: false,
+    deferredInstallPrompt: null,
   };
 
   const els = {
@@ -30,17 +35,22 @@
     historyEmpty: document.getElementById("history-empty"),
     historyCount: document.getElementById("history-count"),
     toast: document.getElementById("toast"),
+    toastMessage: document.getElementById("toast-message"),
+    toastAction: document.getElementById("toast-action"),
     settingsDialog: document.getElementById("settings-dialog"),
-    manualDialog: document.getElementById("manual-dialog"),
     editDialog: document.getElementById("edit-dialog"),
     editForm: document.getElementById("edit-form"),
     infoDialog: document.getElementById("info-dialog"),
     confirmDialog: document.getElementById("confirm-dialog"),
+    confirmTitle: document.getElementById("confirm-title"),
     confirmMessage: document.getElementById("confirm-message"),
     titlesList: document.getElementById("titles-list"),
     titleAddInput: document.getElementById("title-add-input"),
     themeRadios: document.querySelectorAll('input[name="theme"]'),
-    endSessionOverlay: document.getElementById("end-session-overlay"),
+    quickAddForm: document.getElementById("quick-add-form"),
+    quickAddInput: document.getElementById("quick-add-input"),
+    installHint: document.getElementById("install-hint"),
+    installButton: document.getElementById("install-button"),
   };
 
   // ---- storage helpers ----
@@ -127,19 +137,60 @@
     return Number.isNaN(d.getTime()) ? null : d.toISOString();
   };
 
+  const localFileStamp = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return (
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+      `_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`
+    );
+  };
+
   let toastTimer = 0;
-  const showToast = (message, { variant } = {}) => {
-    if (!els.toast) return;
-    els.toast.textContent = message;
-    els.toast.classList.remove("toast--prominent");
+  let toastActionHandler = null;
+  const hideToast = () => {
+    window.clearTimeout(toastTimer);
+    if (toastActionHandler && els.toastAction) {
+      els.toastAction.removeEventListener("click", toastActionHandler);
+      toastActionHandler = null;
+    }
+    if (els.toastAction) {
+      els.toastAction.hidden = true;
+      els.toastAction.textContent = "";
+    }
+    if (els.toast) {
+      els.toast.hidden = true;
+      els.toast.classList.remove("toast--prominent", "toast--with-action");
+    }
+  };
+
+  const showToast = (message, options = {}) => {
+    if (!els.toast || !els.toastMessage) return;
+    const { variant, action } = options;
+    hideToast();
+    els.toastMessage.textContent = message;
     if (variant === "prominent") {
       els.toast.classList.add("toast--prominent");
     }
+    let duration = TOAST_DURATION_DEFAULT;
+    if (variant === "prominent") duration = TOAST_DURATION_PROMINENT;
+    if (action && els.toastAction) {
+      els.toast.classList.add("toast--with-action");
+      els.toastAction.textContent = action.label;
+      els.toastAction.hidden = false;
+      toastActionHandler = () => {
+        hideToast();
+        action.onClick();
+      };
+      els.toastAction.addEventListener("click", toastActionHandler);
+      duration = options.duration ?? TOAST_DURATION_WITH_ACTION;
+    } else if (options.duration != null) {
+      duration = options.duration;
+    }
     els.toast.hidden = false;
-    window.clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => {
-      els.toast.hidden = true;
-    }, 2200);
+    if (duration > 0) {
+      toastTimer = window.setTimeout(hideToast, duration);
+    }
   };
 
   // ---- theme ----
@@ -159,17 +210,29 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "title-button";
-      if (title === state.defaultTitle) {
+      btn.dataset.title = title;
+      const isDefault = title === state.defaultTitle;
+      if (isDefault) {
         btn.classList.add("title-button--default");
       }
-      btn.textContent = title;
-      btn.setAttribute("aria-label", `${title} を記録`);
-      btn.addEventListener("click", () => {
-        recordTitle(title, "manual");
-        if (els.manualDialog && els.manualDialog.open) {
-          els.manualDialog.close();
-        }
-      });
+      const label = document.createElement("span");
+      label.className = "title-button__label";
+      label.textContent = title;
+      btn.appendChild(label);
+      if (isDefault) {
+        const badge = document.createElement("span");
+        badge.className = "title-button__badge";
+        badge.textContent = "自動";
+        badge.setAttribute("aria-hidden", "true");
+        btn.appendChild(badge);
+        btn.setAttribute(
+          "aria-label",
+          `${title} を記録 (起動時に自動で記録されるタイトル)`
+        );
+      } else {
+        btn.setAttribute("aria-label", `${title} を記録`);
+      }
+      btn.addEventListener("click", () => recordTitle(title, "manual"));
       els.titleButtons.appendChild(btn);
     }
   };
@@ -283,7 +346,7 @@
     });
     const noneText = document.createElement("span");
     noneText.className = "title-row__default-text";
-    noneText.textContent = "デフォルトなし";
+    noneText.textContent = "自動記録なし";
     noneLabel.append(noneRadio, noneText);
     noneLi.appendChild(noneLabel);
     els.titlesList.appendChild(noneLi);
@@ -301,14 +364,11 @@
       radio.name = "default-title";
       radio.value = title;
       radio.checked = title === state.defaultTitle;
-      radio.setAttribute("aria-label", `${title} をデフォルトに設定`);
+      radio.setAttribute("aria-label", `${title} を起動時に自動で記録する`);
       radio.addEventListener("change", () => {
         if (radio.checked) setDefaultTitle(title);
       });
-      const defaultText = document.createElement("span");
-      defaultText.className = "visually-hidden";
-      defaultText.textContent = "デフォルト";
-      defaultLabel.append(radio, defaultText);
+      defaultLabel.appendChild(radio);
 
       const input = document.createElement("input");
       input.type = "text";
@@ -394,12 +454,29 @@
     state.records.push(record);
     save(STORAGE.records, state.records);
     renderHistory();
-    showToast(
-      source === "auto"
-        ? `自動で記録しました: ${title}`
-        : `記録しました: ${title}`,
-      source === "auto" ? { variant: "prominent" } : undefined
-    );
+    if (source === "auto") {
+      showToast(`自動で記録しました: ${title}`, {
+        variant: "prominent",
+        action: {
+          label: "取り消す",
+          onClick: () => undoRecord(record.id),
+        },
+      });
+    } else {
+      showToast(`記録しました: ${title}`);
+    }
+  };
+
+  const undoRecord = (id) => {
+    const idx = state.records.findIndex((r) => r.id === id);
+    if (idx < 0) {
+      showToast("対象の記録が見つかりません");
+      return;
+    }
+    state.records.splice(idx, 1);
+    save(STORAGE.records, state.records);
+    renderHistory();
+    showToast("自動記録を取り消しました");
   };
 
   const openEdit = (id) => {
@@ -412,6 +489,13 @@
     window.requestAnimationFrame(() => {
       els.editForm.elements.title.focus();
     });
+  };
+
+  const resetEditAtToNow = () => {
+    if (!els.editForm) return;
+    els.editForm.elements.at.value = toLocalInputValue(
+      new Date().toISOString()
+    );
   };
 
   const handleEditSubmit = (event) => {
@@ -433,8 +517,10 @@
     showToast("記録を更新しました");
   };
 
-  const openConfirm = (message) =>
+  const openConfirm = (message, options = {}) =>
     new Promise((resolve) => {
+      const title = options.title || "確認";
+      els.confirmTitle.textContent = title;
       els.confirmMessage.textContent = message;
       const handler = () => {
         els.confirmDialog.removeEventListener("close", handler);
@@ -449,7 +535,8 @@
     const rec = state.records.find((r) => r.id === id);
     if (!rec) return;
     const ok = await openConfirm(
-      `「${rec.title}」(${formatDateTime(rec.at)}) を削除します。よろしいですか?`
+      `「${rec.title}」(${formatDateTime(rec.at)}) を削除します。よろしいですか?`,
+      { title: "この記録を削除しますか?" }
     );
     if (!ok) return;
     state.records = state.records.filter((r) => r.id !== id);
@@ -464,7 +551,8 @@
       return;
     }
     const ok = await openConfirm(
-      `${state.records.length}件の記録をすべて削除します。元に戻せません。`
+      `${state.records.length}件の記録をすべて削除します。元に戻せません。`,
+      { title: "すべての記録を削除しますか?" }
     );
     if (!ok) return;
     state.records = [];
@@ -483,9 +571,8 @@
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     a.href = url;
-    a.download = `timestamp-${stamp}.json`;
+    a.download = `timestamp_${localFileStamp()}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -493,21 +580,52 @@
     showToast("JSONを書き出しました");
   };
 
-  const addTitle = () => {
-    const value = els.titleAddInput.value.trim();
+  const addTitleFromInput = (input) => {
+    if (!input) return false;
+    const value = input.value.trim();
     if (!value) {
       showToast("タイトルを入力してください");
-      return;
+      return false;
     }
     if (state.titles.includes(value)) {
       showToast("同じタイトルが既にあります");
-      return;
+      return false;
     }
     state.titles.push(value);
     save(STORAGE.titles, state.titles);
-    els.titleAddInput.value = "";
+    input.value = "";
     renderTitlesList();
     renderTitleButtons();
+    return true;
+  };
+
+  const addTitle = () => addTitleFromInput(els.titleAddInput);
+
+  const quickAddTitle = () => {
+    if (!els.quickAddInput) return;
+    const added = addTitleFromInput(els.quickAddInput);
+    if (!added) return;
+    showToast("タイトルを追加しました");
+    window.requestAnimationFrame(() => {
+      const button = els.titleButtons.querySelector(".title-button:last-of-type");
+      if (button) button.focus();
+    });
+  };
+
+  // ---- install prompt (PWA) ----
+  const tryInstallApp = async () => {
+    const prompt = state.deferredInstallPrompt;
+    if (!prompt) {
+      showToast("この端末ではボタンからのインストールに対応していません");
+      return;
+    }
+    try {
+      prompt.prompt();
+      await prompt.userChoice;
+    } finally {
+      state.deferredInstallPrompt = null;
+      if (els.installButton) els.installButton.hidden = true;
+    }
   };
 
   // ---- auto record ----
@@ -530,28 +648,6 @@
     recordTitle(state.defaultTitle, "auto");
   };
 
-  const endSession = () => {
-    try {
-      sessionStorage.removeItem(SESSION_KEY_AUTO_RECORDED);
-    } catch {
-      // sessionStorage 不可な環境では何もしない
-    }
-    showToast("セッションを終了しました。次回起動時に自動記録されます。");
-
-    if (els.endSessionOverlay) {
-      els.endSessionOverlay.hidden = false;
-      document.body.style.overflow = "hidden";
-    }
-
-    requestAnimationFrame(() => {
-      try {
-        window.close();
-      } catch {
-        // 自動で閉じられない環境ではオーバーレイのメッセージが残る
-      }
-    });
-  };
-
   // ---- event wiring ----
   const wire = () => {
     document.body.addEventListener("click", (event) => {
@@ -563,10 +659,6 @@
           renderTitlesList();
           renderThemeRadios();
           els.settingsDialog.showModal();
-          break;
-        case "open-manual":
-          renderTitleButtons();
-          if (els.manualDialog) els.manualDialog.showModal();
           break;
         case "open-info":
           els.infoDialog.showModal();
@@ -585,11 +677,14 @@
         case "export-json":
           exportJson();
           break;
-        case "end-session":
-          endSession();
-          break;
         case "delete-all":
           deleteAll();
+          break;
+        case "reset-edit-at":
+          resetEditAtToNow();
+          break;
+        case "install-app":
+          tryInstallApp();
           break;
       }
     });
@@ -601,6 +696,13 @@
       }
     });
 
+    if (els.quickAddForm) {
+      els.quickAddForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        quickAddTitle();
+      });
+    }
+
     for (const radio of els.themeRadios) {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
@@ -611,6 +713,18 @@
     }
 
     els.editForm.addEventListener("submit", handleEditSubmit);
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      state.deferredInstallPrompt = event;
+      if (els.installButton) els.installButton.hidden = false;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      state.deferredInstallPrompt = null;
+      if (els.installButton) els.installButton.hidden = true;
+      showToast("ホーム画面に追加しました");
+    });
   };
 
   // ---- bootstrap ----
