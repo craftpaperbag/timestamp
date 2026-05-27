@@ -334,13 +334,15 @@ a:hover {
   background: var(--accent);
   border: 2px solid var(--accent);
   border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-3);
+  padding: calc(var(--space-4) + 0.5rem) var(--space-3) var(--space-3);
   min-height: 96px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
   text-align: center;
   word-break: break-word;
   transition: background 0.15s ease, border-color 0.15s ease,
@@ -359,6 +361,17 @@ a:hover {
 
 .title-button__label {
   display: block;
+}
+
+.title-button__last {
+  display: block;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-400);
+  line-height: var(--line-height-150);
+  letter-spacing: 0.02em;
+  color: var(--text-on-accent);
+  opacity: 0.88;
+  font-variant-numeric: tabular-nums;
 }
 
 .title-button--default {
@@ -388,6 +401,25 @@ a:hover {
   content: "●";
   font-size: 0.6em;
   margin-right: 0.35em;
+}
+
+.title-button__count {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-soft-border);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-700);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .quick-add {

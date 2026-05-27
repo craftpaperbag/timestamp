@@ -123,6 +123,60 @@
     }).format(d);
   };
 
+  const formatTimeOfDay = (iso) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const formatRelative = (iso, now = Date.now()) => {
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return "";
+    const diffMs = now - t;
+    if (diffMs < 0) return "";
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 60) return "たった今";
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}分前`;
+    const hour = Math.floor(min / 60);
+    if (hour < 24) return `${hour}時間前`;
+    const day = Math.floor(hour / 24);
+    return `${day}日前`;
+  };
+
+  const isSameLocalDay = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const todayCountFor = (title) => {
+    const now = new Date();
+    let count = 0;
+    for (const rec of state.records) {
+      if (rec.title !== title) continue;
+      const d = new Date(rec.at);
+      if (Number.isNaN(d.getTime())) continue;
+      if (isSameLocalDay(d, now)) count += 1;
+    }
+    return count;
+  };
+
+  const lastRecordFor = (title) => {
+    let best = null;
+    let bestT = -Infinity;
+    for (const rec of state.records) {
+      if (rec.title !== title) continue;
+      const t = new Date(rec.at).getTime();
+      if (Number.isNaN(t)) continue;
+      if (t > bestT) {
+        bestT = t;
+        best = rec;
+      }
+    }
+    return best;
+  };
+
   const toLocalInputValue = (iso) => {
     const d = new Date(iso);
     const pad = (n) => String(n).padStart(2, "0");
@@ -215,23 +269,49 @@
       if (isDefault) {
         btn.classList.add("title-button--default");
       }
+
+      const count = todayCountFor(title);
+      const last = lastRecordFor(title);
+
       const label = document.createElement("span");
       label.className = "title-button__label";
       label.textContent = title;
       btn.appendChild(label);
+
+      if (last) {
+        const sub = document.createElement("span");
+        sub.className = "title-button__last";
+        sub.setAttribute("aria-hidden", "true");
+        sub.textContent = `前回: ${formatTimeOfDay(last.at)} (${formatRelative(last.at)})`;
+        btn.appendChild(sub);
+      }
+
+      if (count > 0) {
+        const countBadge = document.createElement("span");
+        countBadge.className = "title-button__count";
+        countBadge.setAttribute("aria-hidden", "true");
+        countBadge.textContent = `今日 ${count}`;
+        btn.appendChild(countBadge);
+      }
+
       if (isDefault) {
         const badge = document.createElement("span");
         badge.className = "title-button__badge";
         badge.textContent = "自動";
         badge.setAttribute("aria-hidden", "true");
         btn.appendChild(badge);
-        btn.setAttribute(
-          "aria-label",
-          `${title} を記録 (起動時に自動で記録されるタイトル)`
-        );
-      } else {
-        btn.setAttribute("aria-label", `${title} を記録`);
       }
+
+      const labelParts = [`${title} を記録`];
+      if (isDefault) labelParts.push("起動時に自動で記録されるタイトル");
+      if (count > 0) labelParts.push(`今日${count}件`);
+      if (last) {
+        labelParts.push(
+          `前回 ${formatTimeOfDay(last.at)} (${formatRelative(last.at)})`
+        );
+      }
+      btn.setAttribute("aria-label", labelParts.join(" / "));
+
       btn.addEventListener("click", () => recordTitle(title, "manual"));
       els.titleButtons.appendChild(btn);
     }
@@ -275,7 +355,13 @@
 
       const time = document.createElement("div");
       time.className = "history-item__time";
-      time.textContent = formatDateTime(rec.at);
+      const absText = formatDateTime(rec.at);
+      const ageMs = Date.now() - new Date(rec.at).getTime();
+      if (Number.isFinite(ageMs) && ageMs >= 0 && ageMs < 24 * 60 * 60 * 1000) {
+        time.textContent = `${absText} (${formatRelative(rec.at)})`;
+      } else {
+        time.textContent = absText;
+      }
 
       const actions = document.createElement("div");
       actions.className = "history-item__actions";
@@ -454,6 +540,7 @@
     state.records.push(record);
     save(STORAGE.records, state.records);
     renderHistory();
+    renderTitleButtons();
     if (source === "auto") {
       showToast(`自動で記録しました: ${title}`, {
         variant: "prominent",
@@ -463,7 +550,12 @@
         },
       });
     } else {
-      showToast(`記録しました: ${title}`);
+      showToast(`記録しました: ${title}`, {
+        action: {
+          label: "取り消す",
+          onClick: () => undoRecord(record.id),
+        },
+      });
     }
   };
 
@@ -476,7 +568,8 @@
     state.records.splice(idx, 1);
     save(STORAGE.records, state.records);
     renderHistory();
-    showToast("自動記録を取り消しました");
+    renderTitleButtons();
+    showToast("記録を取り消しました");
   };
 
   const openEdit = (id) => {
@@ -514,6 +607,7 @@
     state.records[idx] = { ...state.records[idx], title, at: atIso };
     save(STORAGE.records, state.records);
     renderHistory();
+    renderTitleButtons();
     showToast("記録を更新しました");
   };
 
@@ -542,6 +636,7 @@
     state.records = state.records.filter((r) => r.id !== id);
     save(STORAGE.records, state.records);
     renderHistory();
+    renderTitleButtons();
     showToast("削除しました");
   };
 
@@ -558,6 +653,7 @@
     state.records = [];
     save(STORAGE.records, state.records);
     renderHistory();
+    renderTitleButtons();
     showToast("すべて削除しました");
   };
 
@@ -724,6 +820,13 @@
       state.deferredInstallPrompt = null;
       if (els.installButton) els.installButton.hidden = true;
       showToast("ホーム画面に追加しました");
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        renderTitleButtons();
+        renderHistory();
+      }
     });
   };
 
