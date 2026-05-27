@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "timestamp-v2";
+const CACHE_NAME = "timestamp-v3";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
