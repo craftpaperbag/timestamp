@@ -1,6 +1,8 @@
 "use strict";
 
-const CACHE_NAME = "timestamp-v2";
+// network-first + cache fallback 方式。オンライン時は常に最新を取得し、
+// オフライン時のみキャッシュを返す。CACHE_NAME のバージョンバンプ不要。
+const CACHE_NAME = "timestamp";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -41,23 +43,29 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== "basic") {
-            return response;
-          }
+    fetch(request)
+      .then((response) => {
+        if (
+          response &&
+          response.status === 200 &&
+          response.type === "basic"
+        ) {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => {
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(request, copy))
+            .catch(() => {});
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
           if (request.mode === "navigate") {
             return caches.match("./index.html");
           }
           return Response.error();
-        });
-    })
+        })
+      )
   );
 });
