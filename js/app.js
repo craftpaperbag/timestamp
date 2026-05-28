@@ -51,6 +51,7 @@
     quickAddInput: document.getElementById("quick-add-input"),
     installHint: document.getElementById("install-hint"),
     installButton: document.getElementById("install-button"),
+    importJsonInput: document.getElementById("import-json-input"),
   };
 
   // ---- storage helpers ----
@@ -659,8 +660,12 @@
 
   const exportJson = () => {
     const payload = {
+      schema: "timestamp.backup.v1",
       exportedAt: new Date().toISOString(),
       records: state.records,
+      titles: state.titles,
+      defaultTitle: state.defaultTitle,
+      theme: state.theme,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
@@ -674,6 +679,88 @@
     a.remove();
     URL.revokeObjectURL(url);
     showToast("JSONを書き出しました");
+  };
+
+  const VALID_THEMES = ["auto", "light", "dark"];
+
+  const parseImportPayload = (raw) => {
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("invalid payload");
+    }
+    if (!Array.isArray(data.records)) {
+      throw new Error("records missing");
+    }
+    const records = [];
+    for (const rec of data.records) {
+      if (!rec || typeof rec !== "object") throw new Error("invalid record");
+      const { id, title, at } = rec;
+      if (typeof id !== "string" || typeof title !== "string" || typeof at !== "string") {
+        throw new Error("invalid record fields");
+      }
+      if (Number.isNaN(new Date(at).getTime())) {
+        throw new Error("invalid record date");
+      }
+      records.push({ id, title, at });
+    }
+    let titles = null;
+    if (Array.isArray(data.titles)) {
+      if (!data.titles.every((t) => typeof t === "string" && t.length > 0)) {
+        throw new Error("invalid titles");
+      }
+      titles = Array.from(new Set(data.titles));
+    }
+    let defaultTitle = null;
+    if (typeof data.defaultTitle === "string") {
+      defaultTitle = data.defaultTitle;
+    }
+    let theme = null;
+    if (typeof data.theme === "string" && VALID_THEMES.includes(data.theme)) {
+      theme = data.theme;
+    }
+    return { records, titles, defaultTitle, theme };
+  };
+
+  const importJson = async (file) => {
+    if (!file) return;
+    let parsed;
+    try {
+      const text = await file.text();
+      parsed = parseImportPayload(text);
+    } catch {
+      showToast("インポートに失敗しました");
+      return;
+    }
+    const ok = await openConfirm(
+      `現在のデータを置き換えます (${parsed.records.length}件の記録)。よろしいですか?`,
+      { title: "JSONをインポートしますか?" }
+    );
+    if (!ok) return;
+    state.records = parsed.records;
+    save(STORAGE.records, state.records);
+    if (parsed.titles) {
+      state.titles = parsed.titles;
+      save(STORAGE.titles, state.titles);
+    }
+    if (parsed.defaultTitle !== null) {
+      state.defaultTitle =
+        parsed.defaultTitle && state.titles.includes(parsed.defaultTitle)
+          ? parsed.defaultTitle
+          : "";
+      save(STORAGE.defaultTitle, state.defaultTitle);
+    } else {
+      clearDefaultIfMissing();
+    }
+    if (parsed.theme) {
+      state.theme = parsed.theme;
+      save(STORAGE.theme, state.theme);
+      applyTheme(state.theme);
+      renderThemeRadios();
+    }
+    renderTitleButtons();
+    renderHistory();
+    renderTitlesList();
+    showToast("インポートしました");
   };
 
   const addTitleFromInput = (input) => {
@@ -773,6 +860,12 @@
         case "export-json":
           exportJson();
           break;
+        case "import-json":
+          if (els.importJsonInput) {
+            els.importJsonInput.value = "";
+            els.importJsonInput.click();
+          }
+          break;
         case "delete-all":
           deleteAll();
           break;
@@ -810,6 +903,14 @@
 
     els.editForm.addEventListener("submit", handleEditSubmit);
 
+    if (els.importJsonInput) {
+      els.importJsonInput.addEventListener("change", () => {
+        const file = els.importJsonInput.files && els.importJsonInput.files[0];
+        els.importJsonInput.value = "";
+        importJson(file);
+      });
+    }
+
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       state.deferredInstallPrompt = event;
@@ -846,6 +947,10 @@
     renderHistory();
     wire();
     maybeAutoRecord();
+
+    if (navigator.storage && typeof navigator.storage.persist === "function") {
+      navigator.storage.persist().catch(() => {});
+    }
 
     if (!load(STORAGE.seenIntro, false)) {
       els.infoDialog.showModal();

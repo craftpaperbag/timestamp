@@ -193,6 +193,9 @@
               <button type="button" class="btn" data-action="export-json">
                 JSONエクスポート
               </button>
+              <button type="button" class="btn" data-action="import-json">
+                JSONインポート
+              </button>
               <button
                 type="button"
                 class="btn btn--danger"
@@ -201,6 +204,12 @@
                 全件削除
               </button>
             </div>
+            <input
+              id="import-json-input"
+              type="file"
+              accept="application/json,.json"
+              hidden
+            />
           </section>
         </div>
 
@@ -339,6 +348,11 @@
                 記録はこのブラウザの
                 <code>localStorage</code> にのみ保存されます。
                 端末を変えると引き継がれません。サーバー送信もありません。
+              </li>
+              <li>
+                OS のアップデートや PWA の再インストールでデータが消える場合があります。
+                定期的に「設定 → データ → <strong>JSONエクスポート</strong>」でバックアップしてください。
+                失った場合は「<strong>JSONインポート</strong>」で復元できます。
               </li>
               <li role="alert" class="warning">
                 タイトルには
