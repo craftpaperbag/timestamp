@@ -252,7 +252,7 @@ a:hover {
   padding: var(--space-3) var(--space-4) var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .app-footer {
@@ -314,14 +314,8 @@ a:hover {
 /* Title record buttons (manual dialog) */
 .title-buttons {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-3);
-}
-
-@media (min-width: 480px) {
-  .title-buttons {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-2);
 }
 
 .title-button {
@@ -334,8 +328,8 @@ a:hover {
   background: var(--accent);
   border: 2px solid var(--accent);
   border-radius: var(--radius-lg);
-  padding: calc(var(--space-4) + 0.5rem) var(--space-3) var(--space-3);
-  min-height: 96px;
+  padding: calc(var(--space-4) + 0.25rem) var(--space-2) var(--space-2);
+  min-height: 72px;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   display: flex;
