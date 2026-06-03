@@ -47,8 +47,6 @@
     titlesList: document.getElementById("titles-list"),
     titleAddInput: document.getElementById("title-add-input"),
     themeRadios: document.querySelectorAll('input[name="theme"]'),
-    quickAddForm: document.getElementById("quick-add-form"),
-    quickAddInput: document.getElementById("quick-add-input"),
     installHint: document.getElementById("install-hint"),
     installButton: document.getElementById("install-button"),
   };
@@ -697,17 +695,6 @@
 
   const addTitle = () => addTitleFromInput(els.titleAddInput);
 
-  const quickAddTitle = () => {
-    if (!els.quickAddInput) return;
-    const added = addTitleFromInput(els.quickAddInput);
-    if (!added) return;
-    showToast("タイトルを追加しました");
-    window.requestAnimationFrame(() => {
-      const button = els.titleButtons.querySelector(".title-button:last-of-type");
-      if (button) button.focus();
-    });
-  };
-
   // ---- install prompt (PWA) ----
   const tryInstallApp = async () => {
     const prompt = state.deferredInstallPrompt;
@@ -791,13 +778,6 @@
         addTitle();
       }
     });
-
-    if (els.quickAddForm) {
-      els.quickAddForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-        quickAddTitle();
-      });
-    }
 
     for (const radio of els.themeRadios) {
       radio.addEventListener("change", () => {
