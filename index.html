@@ -179,6 +179,9 @@
               <button type="button" class="btn" data-action="export-json">
                 JSONエクスポート
               </button>
+              <button type="button" class="btn" data-action="import-json">
+                JSONインポート
+              </button>
               <button
                 type="button"
                 class="btn btn--danger"
@@ -187,6 +190,12 @@
                 全件削除
               </button>
             </div>
+            <input
+              id="import-file"
+              type="file"
+              accept="application/json,.json"
+              hidden
+            />
           </section>
         </div>
 
@@ -293,7 +302,8 @@
               </li>
               <li>
                 バックアップが必要なときは「設定 → データ → JSONエクスポート」を
-                使ってください。
+                使ってください。書き出した JSON は「JSONインポート」で
+                復元・統合できます (同じ記録は重複せず取り込まれます)。
               </li>
               <li>
                 <span id="install-hint"

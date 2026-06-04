@@ -49,6 +49,7 @@
     themeRadios: document.querySelectorAll('input[name="theme"]'),
     installHint: document.getElementById("install-hint"),
     installButton: document.getElementById("install-button"),
+    importFile: document.getElementById("import-file"),
   };
 
   // ---- storage helpers ----
@@ -674,6 +675,100 @@
     showToast("JSONを書き出しました");
   };
 
+  const normalizeImportedRecord = (raw) => {
+    if (!raw || typeof raw !== "object") return null;
+    const title = typeof raw.title === "string" ? raw.title.trim() : "";
+    if (!title) return null;
+    if (typeof raw.at !== "string") return null;
+    const d = new Date(raw.at);
+    if (Number.isNaN(d.getTime())) return null;
+    const id = typeof raw.id === "string" && raw.id ? raw.id : uid();
+    const source = raw.source === "auto" ? "auto" : "manual";
+    return { id, title, at: d.toISOString(), source };
+  };
+
+  const importRecordsFromData = async (parsed) => {
+    let rawRecords;
+    if (Array.isArray(parsed)) {
+      rawRecords = parsed;
+    } else if (parsed && Array.isArray(parsed.records)) {
+      rawRecords = parsed.records;
+    } else {
+      showToast("対応していないJSON形式です");
+      return;
+    }
+
+    const normalized = [];
+    let invalid = 0;
+    for (const raw of rawRecords) {
+      const rec = normalizeImportedRecord(raw);
+      if (rec) normalized.push(rec);
+      else invalid += 1;
+    }
+
+    const existingIds = new Set(state.records.map((r) => r.id));
+    const seen = new Set();
+    const toAdd = [];
+    let duplicate = 0;
+    for (const rec of normalized) {
+      if (existingIds.has(rec.id) || seen.has(rec.id)) {
+        duplicate += 1;
+        continue;
+      }
+      seen.add(rec.id);
+      toAdd.push(rec);
+    }
+
+    if (toAdd.length === 0) {
+      if (invalid > 0 && normalized.length === 0) {
+        showToast("インポートできる記録がありませんでした");
+      } else {
+        showToast("新しく取り込む記録はありませんでした");
+      }
+      return;
+    }
+
+    const detailParts = [];
+    if (duplicate > 0) detailParts.push(`重複${duplicate}件はスキップ`);
+    if (invalid > 0) detailParts.push(`不正な${invalid}件は除外`);
+    const detail = detailParts.length ? ` (${detailParts.join(" / ")})` : "";
+
+    const ok = await openConfirm(
+      `${toAdd.length}件の記録を取り込みます${detail}。よろしいですか?`,
+      { title: "記録をインポートしますか?" }
+    );
+    if (!ok) return;
+
+    state.records = state.records.concat(toAdd);
+    save(STORAGE.records, state.records);
+    renderHistory();
+    renderTitleButtons();
+    showToast(`${toAdd.length}件を取り込みました${detail}`);
+  };
+
+  const handleImportFile = async (file) => {
+    if (!file) return;
+    let text;
+    try {
+      text = await file.text();
+    } catch {
+      showToast("ファイルを読み込めませんでした");
+      return;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      showToast("JSONの解析に失敗しました");
+      return;
+    }
+    await importRecordsFromData(parsed);
+  };
+
+  const triggerImport = () => {
+    if (els.importFile) els.importFile.click();
+  };
+
   const addTitleFromInput = (input) => {
     if (!input) return false;
     const value = input.value.trim();
@@ -760,6 +855,9 @@
         case "export-json":
           exportJson();
           break;
+        case "import-json":
+          triggerImport();
+          break;
         case "delete-all":
           deleteAll();
           break;
@@ -789,6 +887,14 @@
     }
 
     els.editForm.addEventListener("submit", handleEditSubmit);
+
+    if (els.importFile) {
+      els.importFile.addEventListener("change", async () => {
+        const file = els.importFile.files && els.importFile.files[0];
+        await handleImportFile(file);
+        els.importFile.value = "";
+      });
+    }
 
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
