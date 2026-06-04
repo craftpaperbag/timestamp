@@ -21,16 +21,19 @@
 
     <header class="app-header">
       <div class="app-header__inner">
-        <h1 class="app-title">
-          <button
-            type="button"
-            class="app-title__button"
-            data-action="scroll-top"
-            aria-label="先頭へ戻る"
-          >
-            timestamp
-          </button>
-        </h1>
+        <div class="app-header__brand">
+          <h1 class="app-title">
+            <button
+              type="button"
+              class="app-title__button"
+              data-action="scroll-top"
+              aria-label="先頭へ戻る"
+            >
+              timestamp
+            </button>
+          </h1>
+          <span id="app-version" class="app-version" aria-label="バージョン" hidden></span>
+        </div>
         <div class="app-header__actions">
           <button
             type="button"
