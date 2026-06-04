@@ -181,9 +181,6 @@ a:hover {
 }
 
 .app-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   padding-top: env(safe-area-inset-top);
@@ -414,31 +411,6 @@ a:hover {
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-sm);
   font-variant-numeric: tabular-nums;
-}
-
-.quick-add {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-2);
-  align-items: center;
-  margin-top: var(--space-3);
-}
-
-.quick-add input[type="text"] {
-  font: inherit;
-  font-size: var(--font-size-16);
-  line-height: var(--line-height-150);
-  padding: 0.625rem 0.875rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text);
-  min-height: 44px;
-  width: 100%;
-}
-
-.quick-add input[type="text"]:focus {
-  border-color: var(--accent);
 }
 
 /* History list */
