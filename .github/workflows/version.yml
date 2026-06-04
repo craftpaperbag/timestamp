@@ -1,0 +1,44 @@
+name: Update version
+
+# main が更新される (PR マージ含む) たびに version.json を
+# その時点のコミット (短縮 SHA) と日付で書き換えてコミットし直す。
+# version.json 自身の変更では再実行しないよう paths-ignore で除外している。
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "version.json"
+
+# 既定の GITHUB_TOKEN でコミットを push するための権限。
+permissions:
+  contents: write
+
+# 連続 push が来たときに古い実行をまとめる。
+concurrency:
+  group: update-version
+  cancel-in-progress: true
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write version.json
+        run: |
+          version="$(git rev-parse --short HEAD)"
+          date="$(git log -1 --format=%cs)"
+          printf '{\n  "version": "%s",\n  "date": "%s"\n}\n' "$version" "$date" > version.json
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- version.json; then
+            echo "version.json は最新です。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git commit -m "chore: update version.json [skip ci]"
+          git push

@@ -50,6 +50,7 @@
     installHint: document.getElementById("install-hint"),
     installButton: document.getElementById("install-button"),
     importFile: document.getElementById("import-file"),
+    appVersion: document.getElementById("app-version"),
   };
 
   // ---- storage helpers ----
@@ -916,6 +917,25 @@
     });
   };
 
+  // ---- version ----
+  const showVersion = async () => {
+    if (!els.appVersion) return;
+    try {
+      const res = await fetch("./version.json", { cache: "no-cache" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const version = typeof data.version === "string" ? data.version.trim() : "";
+      if (!version) return;
+      els.appVersion.textContent = "v" + version;
+      if (typeof data.date === "string" && data.date) {
+        els.appVersion.title = data.date;
+      }
+      els.appVersion.hidden = false;
+    } catch {
+      /* バージョン表示はベストエフォート */
+    }
+  };
+
   // ---- bootstrap ----
   const init = () => {
     state.records = load(STORAGE.records, []);
@@ -932,6 +952,7 @@
     renderHistory();
     wire();
     maybeAutoRecord();
+    showVersion();
 
     if (!load(STORAGE.seenIntro, false)) {
       els.infoDialog.showModal();
