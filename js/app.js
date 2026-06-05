@@ -661,6 +661,8 @@
     const payload = {
       exportedAt: new Date().toISOString(),
       records: state.records,
+      titles: state.titles,
+      defaultTitle: state.defaultTitle,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
@@ -688,12 +690,32 @@
     return { id, title, at: d.toISOString(), source };
   };
 
+  const normalizeImportedTitles = (raw) => {
+    if (!Array.isArray(raw)) return null;
+    const out = [];
+    const seen = new Set();
+    for (const item of raw) {
+      if (typeof item !== "string") continue;
+      const value = item.trim();
+      if (!value || seen.has(value)) continue;
+      seen.add(value);
+      out.push(value);
+    }
+    return out;
+  };
+
   const importRecordsFromData = async (parsed) => {
     let rawRecords;
+    let importedTitles = null;
+    let importedDefault = null;
     if (Array.isArray(parsed)) {
       rawRecords = parsed;
     } else if (parsed && Array.isArray(parsed.records)) {
       rawRecords = parsed.records;
+      importedTitles = normalizeImportedTitles(parsed.titles);
+      if (typeof parsed.defaultTitle === "string") {
+        importedDefault = parsed.defaultTitle.trim();
+      }
     } else {
       showToast("対応していないJSON形式です");
       return;
@@ -720,14 +742,38 @@
       toAdd.push(rec);
     }
 
-    if (toAdd.length === 0) {
+    const newTitles = importedTitles
+      ? importedTitles.filter((t) => !state.titles.includes(t))
+      : [];
+    const resultingTitles = state.titles.concat(newTitles);
+
+    // 自動保存 (起動時に自動で記録するタイトル) の有無も取り込む。
+    // null = 変更なし / "" = 自動保存オフ / それ以外 = 対象タイトル。
+    let nextDefault = null;
+    if (
+      importedDefault !== null &&
+      importedDefault !== state.defaultTitle &&
+      (importedDefault === "" || resultingTitles.includes(importedDefault))
+    ) {
+      nextDefault = importedDefault;
+    }
+
+    if (toAdd.length === 0 && newTitles.length === 0 && nextDefault === null) {
       if (invalid > 0 && normalized.length === 0) {
-        showToast("インポートできる記録がありませんでした");
+        showToast("インポートできるデータがありませんでした");
       } else {
-        showToast("新しく取り込む記録はありませんでした");
+        showToast("新しく取り込むデータはありませんでした");
       }
       return;
     }
+
+    const summary = [];
+    if (toAdd.length > 0) summary.push(`記録${toAdd.length}件`);
+    if (newTitles.length > 0) summary.push(`タイトル${newTitles.length}件`);
+    if (nextDefault !== null) {
+      summary.push(nextDefault ? `自動保存「${nextDefault}」` : "自動保存の解除");
+    }
+    const summaryText = summary.join(" / ");
 
     const detailParts = [];
     if (duplicate > 0) detailParts.push(`重複${duplicate}件はスキップ`);
@@ -735,16 +781,29 @@
     const detail = detailParts.length ? ` (${detailParts.join(" / ")})` : "";
 
     const ok = await openConfirm(
-      `${toAdd.length}件の記録を取り込みます${detail}。よろしいですか?`,
-      { title: "記録をインポートしますか?" }
+      `${summaryText}を取り込みます${detail}。よろしいですか?`,
+      { title: "データをインポートしますか?" }
     );
     if (!ok) return;
 
-    state.records = state.records.concat(toAdd);
-    save(STORAGE.records, state.records);
+    if (toAdd.length > 0) {
+      state.records = state.records.concat(toAdd);
+      save(STORAGE.records, state.records);
+    }
+    if (newTitles.length > 0) {
+      state.titles = state.titles.concat(newTitles);
+      save(STORAGE.titles, state.titles);
+    }
+    if (nextDefault !== null) {
+      state.defaultTitle = nextDefault;
+      save(STORAGE.defaultTitle, state.defaultTitle);
+    }
+    clearDefaultIfMissing();
+
     renderHistory();
+    renderTitlesList();
     renderTitleButtons();
-    showToast(`${toAdd.length}件を取り込みました${detail}`);
+    showToast(`${summaryText}を取り込みました${detail}`);
   };
 
   const handleImportFile = async (file) => {
