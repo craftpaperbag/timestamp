@@ -331,14 +331,16 @@ a:hover {
   gap: var(--space-2);
 }
 
+/* 記録ボタンは DADS のセカンダリーボタン (アウトライン) スタイル。
+   プライマリーは画面内で 1 つ (ダイアログの OK 等) に限定する。 */
 .title-button {
   position: relative;
   font: inherit;
   font-size: var(--font-size-18);
   font-weight: var(--font-weight-700);
   line-height: var(--line-height-150);
-  color: var(--text-on-accent);
-  background: var(--accent);
+  color: var(--accent);
+  background: var(--surface);
   border: 2px solid var(--accent);
   border-radius: var(--radius-lg);
   padding: calc(var(--space-4) + 0.25rem) var(--space-2) var(--space-2);
@@ -357,8 +359,9 @@ a:hover {
 }
 
 .title-button:hover {
-  background: var(--accent-strong);
+  background: var(--accent-soft);
   border-color: var(--accent-strong);
+  color: var(--accent-strong);
   box-shadow: var(--shadow-md);
 }
 
@@ -376,8 +379,7 @@ a:hover {
   font-weight: var(--font-weight-400);
   line-height: var(--line-height-150);
   letter-spacing: 0.02em;
-  color: var(--text-on-accent);
-  opacity: 0.88;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -392,9 +394,9 @@ a:hover {
   right: 8px;
   display: inline-flex;
   align-items: center;
-  background: var(--text-on-accent);
-  color: var(--accent);
-  border: 1px solid var(--text-on-accent);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border: 1px solid var(--accent);
   font-size: var(--font-size-14);
   font-weight: var(--font-weight-700);
   line-height: 1;
