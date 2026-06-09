@@ -20,14 +20,17 @@
 
 - 事前に登録したタイトル(例: `頭痛薬` / `コーヒー` / `目薬`)のボタンを
   タップするだけで、その瞬間の日時を記録します。
+- 各タイトルには [lucide](https://lucide.dev) (ISC License) のアイコンを
+  10 種類から 1 つ選べます。記録ボタンはアイコンを大きく、タイトルを
+  小さく添えるカード型で、スマホでは 3 列で並びます。
 - 記録は新しい順に表示され、いつでも編集・個別削除・全件削除が可能です。
 - 記録を JSON ファイルとして書き出せます。書き出した JSON は
-  インポートして復元・統合できます (同じ記録は重複せず取り込まれます)。
-- [デジタル庁デザインシステム (DADS)](https://design.digital.go.jp/dads/)
-  に準拠したカラー・タイポグラフィ・余白・角丸・エレベーション。
-  デザイントークンは公式の
-  [`@digital-go-jp/design-tokens`](https://github.com/digital-go-jp/design-tokens)
-  (MIT) より抜粋。
+  インポートして復元・統合できます (同じ記録は重複せず取り込まれ、
+  タイトル・アイコン・自動保存の設定も一緒に移行できます)。
+- スタイルは [Tailwind CSS](https://tailwindcss.com) (v4) で実装。
+  カラースキーマは `css/tailwind.css` で **oklch** により一元定義した
+  セマンティックカラー (`bg` / `surface` / `ink` / `accent` など) のみを
+  使用し、ライト/ダークは変数の差し替えだけで切り替わります。
 - ライト/ダーク/自動の3種類の表示モード。
 - グレースケールでも判別できる配色と、大きめのタップ領域 (最低 44px)。
 
@@ -43,8 +46,9 @@
 
 ## ローカルでの確認
 
-ビルド不要の静的サイトです。本番に反映する前に、ローカルの軽量 web サーバーで
-動作確認してください。任意の HTTP サーバーで配信できます。
+配信はビルド不要の静的サイトです (生成済み CSS をコミットしています)。
+本番に反映する前に、ローカルの軽量 web サーバーで動作確認してください。
+任意の HTTP サーバーで配信できます。
 
 ```sh
 python3 -m http.server -d . 8000
@@ -53,6 +57,22 @@ python3 -m http.server -d . 8000
 
 > `file://` で直接開くと一部ブラウザでモジュールや fetch が動かないため、
 > 必ず HTTP サーバー越しに開いてください。
+
+## CSS のビルド (スタイルを変更する場合のみ)
+
+`css/style.css` は Tailwind CSS (v4) の生成物です。直接編集せず、
+ソースの `css/tailwind.css` (カラースキーマ・コンポーネント定義) や
+HTML/JS のクラスを変更したうえで再生成してください。
+
+```sh
+npm install
+npm run build:css   # css/tailwind.css → css/style.css
+npm run watch:css   # 開発中はウォッチ
+```
+
+`js/icons.js` は [lucide-static](https://www.npmjs.com/package/lucide-static)
+から使用アイコンのみを抽出した生成物です。アイコンを追加する場合は
+`node_modules/lucide-static/icons/*.svg` の内容を同じ形式で追記してください。
 
 ## GitHub Pages の初期設定 (リポジトリオーナー向け)
 

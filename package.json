@@ -1,0 +1,16 @@
+{
+  "name": "timestamp",
+  "private": true,
+  "version": "0.0.0",
+  "description": "ワンタップで「いま」を記録するPWA",
+  "scripts": {
+    "build:css": "tailwindcss -i ./css/tailwind.css -o ./css/style.css --minify",
+    "watch:css": "tailwindcss -i ./css/tailwind.css -o ./css/style.css --watch"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "lucide-static": "^0.525.0",
+    "tailwindcss": "^4.1.0"
+  }
+}
