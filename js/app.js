@@ -4,6 +4,7 @@
   const STORAGE = {
     records: "timestamp.records",
     titles: "timestamp.titles",
+    titleIcons: "timestamp.titleIcons",
     defaultTitle: "timestamp.defaultTitle",
     theme: "timestamp.theme",
     seenIntro: "timestamp.seenIntro",
@@ -12,6 +13,28 @@
   const SESSION_KEY_AUTO_RECORDED = "timestamp.autoRecorded";
 
   const DEFAULT_TITLES = ["頭痛薬", "コーヒー", "目薬"];
+
+  const DEFAULT_TITLE_ICONS = {
+    頭痛薬: "pill",
+    コーヒー: "coffee",
+    目薬: "eye",
+  };
+
+  // タイトルに設定できるアイコン (lucide)。未設定・不明なものはこれにフォールバック。
+  const FALLBACK_ICON = "clock";
+
+  const ICON_LABELS = {
+    clock: "時計",
+    pill: "薬",
+    coffee: "コーヒー",
+    "glass-water": "水分",
+    utensils: "食事",
+    eye: "目薬",
+    dumbbell: "運動",
+    bed: "睡眠",
+    "heart-pulse": "体調",
+    "book-open": "読書・学習",
+  };
 
   const HISTORY_PREVIEW_COUNT = 5;
 
@@ -22,6 +45,7 @@
   const state = {
     records: [],
     titles: [],
+    titleIcons: {},
     defaultTitle: "",
     theme: "auto",
     historyExpanded: false,
@@ -46,6 +70,9 @@
     confirmMessage: document.getElementById("confirm-message"),
     titlesList: document.getElementById("titles-list"),
     titleAddInput: document.getElementById("title-add-input"),
+    iconDialog: document.getElementById("icon-dialog"),
+    iconDialogTarget: document.getElementById("icon-dialog-target"),
+    iconChoices: document.getElementById("icon-choices"),
     themeRadios: document.querySelectorAll('input[name="theme"]'),
     installHint: document.getElementById("install-hint"),
     installButton: document.getElementById("install-button"),
@@ -76,6 +103,49 @@
   // ---- utilities ----
   const uid = () =>
     `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+
+  // ---- icons (lucide / js/icons.js) ----
+  const Icons = window.TSIcons;
+
+  const isPickerIcon = (name) =>
+    typeof name === "string" && Icons.PICKER_ICONS.includes(name);
+
+  const iconFor = (title) => {
+    const name = state.titleIcons[title];
+    return isPickerIcon(name) ? name : FALLBACK_ICON;
+  };
+
+  const setTitleIcon = (title, icon) => {
+    if (!state.titles.includes(title) || !isPickerIcon(icon)) return;
+    state.titleIcons = { ...state.titleIcons, [title]: icon };
+    save(STORAGE.titleIcons, state.titleIcons);
+  };
+
+  const moveTitleIcon = (from, to) => {
+    if (!(from in state.titleIcons)) return;
+    const next = { ...state.titleIcons };
+    next[to] = next[from];
+    delete next[from];
+    state.titleIcons = next;
+    save(STORAGE.titleIcons, state.titleIcons);
+  };
+
+  const removeTitleIcon = (title) => {
+    if (!(title in state.titleIcons)) return;
+    const next = { ...state.titleIcons };
+    delete next[title];
+    state.titleIcons = next;
+    save(STORAGE.titleIcons, state.titleIcons);
+  };
+
+  // 静的 HTML 側のアイコンプレースホルダ (<span data-icon="...">) を実体化する
+  const mountStaticIcons = () => {
+    for (const el of document.querySelectorAll("[data-icon]")) {
+      el.replaceChildren(
+        Icons.create(el.dataset.icon, el.dataset.iconClass || "size-5")
+      );
+    }
+  };
 
   const orderedTitles = () => {
     const def = state.defaultTitle;
@@ -263,42 +333,47 @@
     for (const title of orderedTitles()) {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "title-button";
+      btn.className = "record-btn";
       btn.dataset.title = title;
       const isDefault = title === state.defaultTitle;
       if (isDefault) {
-        btn.classList.add("title-button--default");
+        btn.classList.add("record-btn-default");
       }
 
       const count = todayCountFor(title);
       const last = lastRecordFor(title);
 
+      const plate = document.createElement("span");
+      plate.className = "record-btn-icon";
+      plate.appendChild(Icons.create(iconFor(title), "size-7"));
+      btn.appendChild(plate);
+
       const label = document.createElement("span");
-      label.className = "title-button__label";
+      label.className = "record-btn-label";
       label.textContent = title;
       btn.appendChild(label);
 
       if (last) {
         const sub = document.createElement("span");
-        sub.className = "title-button__last";
+        sub.className = "record-btn-last";
         sub.setAttribute("aria-hidden", "true");
-        sub.textContent = `前回: ${formatTimeOfDay(last.at)} (${formatRelative(last.at)})`;
+        sub.textContent = `${formatTimeOfDay(last.at)} (${formatRelative(last.at)})`;
         btn.appendChild(sub);
       }
 
       if (count > 0) {
         const countBadge = document.createElement("span");
-        countBadge.className = "title-button__count";
+        countBadge.className = "record-btn-count";
         countBadge.setAttribute("aria-hidden", "true");
-        countBadge.textContent = `今日 ${count}`;
+        countBadge.textContent = String(count);
         btn.appendChild(countBadge);
       }
 
       if (isDefault) {
         const badge = document.createElement("span");
-        badge.className = "title-button__badge";
-        badge.textContent = "自動";
+        badge.className = "record-btn-auto";
         badge.setAttribute("aria-hidden", "true");
+        badge.appendChild(Icons.create("zap", "size-3"));
         btn.appendChild(badge);
       }
 
@@ -337,24 +412,35 @@
         : sorted.slice(0, HISTORY_PREVIEW_COUNT);
     for (const rec of visible) {
       const li = document.createElement("li");
-      li.className = "history-item";
+      li.className =
+        "flex items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5";
+
+      const plate = document.createElement("span");
+      plate.className =
+        "flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent";
+      plate.appendChild(Icons.create(iconFor(rec.title), "size-5"));
+
+      const body = document.createElement("div");
+      body.className = "min-w-0 flex-1";
 
       const title = document.createElement("div");
-      title.className = "history-item__title";
+      title.className =
+        "flex flex-wrap items-center gap-1.5 text-sm font-bold break-words text-ink";
       const titleText = document.createElement("span");
-      titleText.className = "history-item__title-text";
       titleText.textContent = rec.title;
       title.appendChild(titleText);
       if (rec.source === "auto") {
         const badge = document.createElement("span");
-        badge.className = "badge badge--auto";
-        badge.textContent = "自動";
+        badge.className =
+          "inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-on-accent";
+        badge.appendChild(Icons.create("zap", "size-2.5"));
+        badge.appendChild(document.createTextNode("自動"));
         badge.setAttribute("aria-label", "自動で記録された項目");
         title.appendChild(badge);
       }
 
       const time = document.createElement("div");
-      time.className = "history-item__time";
+      time.className = "text-xs text-ink-muted tabular-nums";
       const absText = formatDateTime(rec.at);
       const ageMs = Date.now() - new Date(rec.at).getTime();
       if (Number.isFinite(ageMs) && ageMs >= 0 && ageMs < 24 * 60 * 60 * 1000) {
@@ -363,41 +449,47 @@
         time.textContent = absText;
       }
 
+      body.append(title, time);
+
       const actions = document.createElement("div");
-      actions.className = "history-item__actions";
+      actions.className = "flex shrink-0 gap-1.5";
 
       const editBtn = document.createElement("button");
       editBtn.type = "button";
-      editBtn.className = "btn btn--small";
-      editBtn.textContent = "編集";
+      editBtn.className = "icon-ctl";
+      editBtn.appendChild(Icons.create("pencil", "size-4"));
       editBtn.setAttribute("aria-label", `${rec.title} の記録を編集`);
       editBtn.addEventListener("click", () => openEdit(rec.id));
 
       const deleteBtn = document.createElement("button");
       deleteBtn.type = "button";
-      deleteBtn.className = "btn btn--small btn--danger";
-      deleteBtn.textContent = "削除";
+      deleteBtn.className = "icon-ctl icon-ctl-danger";
+      deleteBtn.appendChild(Icons.create("trash-2", "size-4"));
       deleteBtn.setAttribute("aria-label", `${rec.title} の記録を削除`);
       deleteBtn.addEventListener("click", () => confirmDelete(rec.id));
 
       actions.append(editBtn, deleteBtn);
-      li.append(title, time, actions);
+      li.append(plate, body, actions);
       els.historyList.appendChild(li);
     }
 
     if (hasOverflow) {
       const toggleLi = document.createElement("li");
-      toggleLi.className = "history-toggle";
+      toggleLi.className = "mt-1 flex justify-center";
       const toggleBtn = document.createElement("button");
       toggleBtn.type = "button";
-      toggleBtn.className = "btn btn--ghost history-toggle__btn";
+      toggleBtn.className = "btn btn-ghost btn-sm";
       toggleBtn.setAttribute("aria-expanded", String(state.historyExpanded));
       toggleBtn.setAttribute("aria-controls", "history-list");
       if (state.historyExpanded) {
-        toggleBtn.textContent = "折りたたむ";
+        toggleBtn.appendChild(Icons.create("chevron-up", "size-4"));
+        toggleBtn.appendChild(document.createTextNode("折りたたむ"));
       } else {
         const remaining = sorted.length - HISTORY_PREVIEW_COUNT;
-        toggleBtn.textContent = `もっと見る (残り${remaining}件)`;
+        toggleBtn.appendChild(Icons.create("chevron-down", "size-4"));
+        toggleBtn.appendChild(
+          document.createTextNode(`もっと見る (残り${remaining}件)`)
+        );
       }
       toggleBtn.addEventListener("click", () => {
         state.historyExpanded = !state.historyExpanded;
@@ -412,18 +504,20 @@
     els.titlesList.replaceChildren();
     if (state.titles.length === 0) {
       const li = document.createElement("li");
-      li.className = "empty-note";
+      li.className =
+        "rounded-xl border border-dashed border-line bg-surface p-4 text-sm text-ink-muted";
       li.textContent = "タイトルがありません。追加してください。";
       els.titlesList.appendChild(li);
       return;
     }
 
     const noneLi = document.createElement("li");
-    noneLi.className = "title-row title-row--none";
     const noneLabel = document.createElement("label");
-    noneLabel.className = "title-row__default";
+    noneLabel.className =
+      "flex min-h-9 cursor-pointer items-center gap-2 px-1";
     const noneRadio = document.createElement("input");
     noneRadio.type = "radio";
+    noneRadio.className = "size-4 accent-accent";
     noneRadio.name = "default-title";
     noneRadio.value = "";
     noneRadio.checked = !state.defaultTitle;
@@ -431,7 +525,7 @@
       if (noneRadio.checked) setDefaultTitle("");
     });
     const noneText = document.createElement("span");
-    noneText.className = "title-row__default-text";
+    noneText.className = "text-sm text-ink-muted";
     noneText.textContent = "自動記録なし";
     noneLabel.append(noneRadio, noneText);
     noneLi.appendChild(noneLabel);
@@ -440,13 +534,21 @@
     for (const title of orderedTitles()) {
       const index = state.titles.indexOf(title);
       const li = document.createElement("li");
-      li.className = "title-row";
-      if (title === state.defaultTitle) li.classList.add("title-row--default");
+      li.className =
+        "flex flex-col gap-1.5 rounded-xl border p-2 " +
+        (title === state.defaultTitle
+          ? "border-accent-edge bg-accent-soft"
+          : "border-line");
+
+      const mainRow = document.createElement("div");
+      mainRow.className = "flex items-center gap-2";
 
       const defaultLabel = document.createElement("label");
-      defaultLabel.className = "title-row__default";
+      defaultLabel.className =
+        "flex min-h-9 shrink-0 cursor-pointer items-center px-0.5";
       const radio = document.createElement("input");
       radio.type = "radio";
+      radio.className = "size-4 accent-accent";
       radio.name = "default-title";
       radio.value = title;
       radio.checked = title === state.defaultTitle;
@@ -456,9 +558,19 @@
       });
       defaultLabel.appendChild(radio);
 
+      const iconBtn = document.createElement("button");
+      iconBtn.type = "button";
+      iconBtn.className = "icon-ctl text-accent";
+      iconBtn.appendChild(Icons.create(iconFor(title), "size-5"));
+      iconBtn.setAttribute(
+        "aria-label",
+        `${title} のアイコンを変更 (現在: ${ICON_LABELS[iconFor(title)] || ""})`
+      );
+      iconBtn.addEventListener("click", () => openIconPicker(title));
+
       const input = document.createElement("input");
       input.type = "text";
-      input.className = "title-edit-input";
+      input.className = "field-input min-h-9 flex-1";
       input.value = title;
       input.maxLength = 32;
       input.setAttribute("aria-label", `タイトル ${index + 1}`);
@@ -477,6 +589,7 @@
         const prev = state.titles[index];
         state.titles[index] = next;
         save(STORAGE.titles, state.titles);
+        moveTitleIcon(prev, next);
         if (state.defaultTitle === prev) {
           state.defaultTitle = next;
           save(STORAGE.defaultTitle, state.defaultTitle);
@@ -485,31 +598,37 @@
         renderTitleButtons();
       });
 
+      mainRow.append(defaultLabel, iconBtn, input);
+
+      const ctlRow = document.createElement("div");
+      ctlRow.className = "flex justify-end gap-1.5";
+
       const upBtn = document.createElement("button");
       upBtn.type = "button";
-      upBtn.className = "btn btn--small title-row__reorder";
-      upBtn.textContent = "↑";
+      upBtn.className = "icon-ctl";
+      upBtn.appendChild(Icons.create("chevron-up", "size-4"));
       upBtn.setAttribute("aria-label", `${title} を上へ`);
       upBtn.disabled = index <= 0;
       upBtn.addEventListener("click", () => swapTitles(index, index - 1));
 
       const downBtn = document.createElement("button");
       downBtn.type = "button";
-      downBtn.className = "btn btn--small title-row__reorder";
-      downBtn.textContent = "↓";
+      downBtn.className = "icon-ctl";
+      downBtn.appendChild(Icons.create("chevron-down", "size-4"));
       downBtn.setAttribute("aria-label", `${title} を下へ`);
       downBtn.disabled = index >= state.titles.length - 1;
       downBtn.addEventListener("click", () => swapTitles(index, index + 1));
 
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
-      removeBtn.className = "btn btn--small btn--danger";
-      removeBtn.textContent = "削除";
+      removeBtn.className = "icon-ctl icon-ctl-danger";
+      removeBtn.appendChild(Icons.create("trash-2", "size-4"));
       removeBtn.setAttribute("aria-label", `${title} を削除`);
       removeBtn.addEventListener("click", () => {
         const removed = state.titles[index];
         state.titles.splice(index, 1);
         save(STORAGE.titles, state.titles);
+        removeTitleIcon(removed);
         if (state.defaultTitle === removed) {
           state.defaultTitle = "";
           save(STORAGE.defaultTitle, state.defaultTitle);
@@ -518,9 +637,37 @@
         renderTitleButtons();
       });
 
-      li.append(defaultLabel, input, upBtn, downBtn, removeBtn);
+      ctlRow.append(upBtn, downBtn, removeBtn);
+      li.append(mainRow, ctlRow);
       els.titlesList.appendChild(li);
     }
+  };
+
+  // ---- icon picker ----
+  const openIconPicker = (title) => {
+    if (!state.titles.includes(title)) return;
+    els.iconDialogTarget.textContent = `「${title}」のアイコンを選んでください。`;
+    els.iconChoices.replaceChildren();
+    const current = iconFor(title);
+    for (const name of Icons.PICKER_ICONS) {
+      const choice = document.createElement("button");
+      choice.type = "button";
+      choice.className = "icon-choice";
+      if (name === current) choice.classList.add("icon-choice-selected");
+      choice.setAttribute("aria-pressed", String(name === current));
+      choice.setAttribute("aria-label", ICON_LABELS[name] || name);
+      choice.title = ICON_LABELS[name] || name;
+      choice.appendChild(Icons.create(name, "size-6"));
+      choice.addEventListener("click", () => {
+        setTitleIcon(title, name);
+        els.iconDialog.close();
+        renderTitlesList();
+        renderTitleButtons();
+        renderHistory();
+      });
+      els.iconChoices.appendChild(choice);
+    }
+    els.iconDialog.showModal();
   };
 
   const renderThemeRadios = () => {
@@ -662,6 +809,7 @@
       exportedAt: new Date().toISOString(),
       records: state.records,
       titles: state.titles,
+      titleIcons: state.titleIcons,
       defaultTitle: state.defaultTitle,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
@@ -704,15 +852,28 @@
     return out;
   };
 
+  const normalizeImportedIcons = (raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const out = {};
+    for (const [title, icon] of Object.entries(raw)) {
+      const t = typeof title === "string" ? title.trim() : "";
+      if (!t || !isPickerIcon(icon)) continue;
+      out[t] = icon;
+    }
+    return out;
+  };
+
   const importRecordsFromData = async (parsed) => {
     let rawRecords;
     let importedTitles = null;
+    let importedIcons = null;
     let importedDefault = null;
     if (Array.isArray(parsed)) {
       rawRecords = parsed;
     } else if (parsed && Array.isArray(parsed.records)) {
       rawRecords = parsed.records;
       importedTitles = normalizeImportedTitles(parsed.titles);
+      importedIcons = normalizeImportedIcons(parsed.titleIcons);
       if (typeof parsed.defaultTitle === "string") {
         importedDefault = parsed.defaultTitle.trim();
       }
@@ -747,6 +908,17 @@
       : [];
     const resultingTitles = state.titles.concat(newTitles);
 
+    // アイコン設定: 取り込み後に存在するタイトル分のみ、変化があるものを反映
+    const iconChanges = {};
+    if (importedIcons) {
+      for (const [t, icon] of Object.entries(importedIcons)) {
+        if (resultingTitles.includes(t) && iconFor(t) !== icon) {
+          iconChanges[t] = icon;
+        }
+      }
+    }
+    const iconChangeCount = Object.keys(iconChanges).length;
+
     // 自動保存 (起動時に自動で記録するタイトル) の有無も取り込む。
     // null = 変更なし / "" = 自動保存オフ / それ以外 = 対象タイトル。
     let nextDefault = null;
@@ -758,7 +930,12 @@
       nextDefault = importedDefault;
     }
 
-    if (toAdd.length === 0 && newTitles.length === 0 && nextDefault === null) {
+    if (
+      toAdd.length === 0 &&
+      newTitles.length === 0 &&
+      iconChangeCount === 0 &&
+      nextDefault === null
+    ) {
       if (invalid > 0 && normalized.length === 0) {
         showToast("インポートできるデータがありませんでした");
       } else {
@@ -770,6 +947,7 @@
     const summary = [];
     if (toAdd.length > 0) summary.push(`記録${toAdd.length}件`);
     if (newTitles.length > 0) summary.push(`タイトル${newTitles.length}件`);
+    if (iconChangeCount > 0) summary.push(`アイコン${iconChangeCount}件`);
     if (nextDefault !== null) {
       summary.push(nextDefault ? `自動保存「${nextDefault}」` : "自動保存の解除");
     }
@@ -793,6 +971,10 @@
     if (newTitles.length > 0) {
       state.titles = state.titles.concat(newTitles);
       save(STORAGE.titles, state.titles);
+    }
+    if (iconChangeCount > 0) {
+      state.titleIcons = { ...state.titleIcons, ...iconChanges };
+      save(STORAGE.titleIcons, state.titleIcons);
     }
     if (nextDefault !== null) {
       state.defaultTitle = nextDefault;
@@ -1001,12 +1183,24 @@
     const savedTitles = load(STORAGE.titles, null);
     state.titles = Array.isArray(savedTitles) ? savedTitles : DEFAULT_TITLES.slice();
     if (savedTitles == null) save(STORAGE.titles, state.titles);
+    const savedIcons = load(STORAGE.titleIcons, null);
+    if (savedIcons && typeof savedIcons === "object" && !Array.isArray(savedIcons)) {
+      state.titleIcons = savedIcons;
+    } else {
+      // 初回 (または旧データからの移行時) は既定タイトルにだけアイコンを割り当てる
+      state.titleIcons = {};
+      for (const [title, icon] of Object.entries(DEFAULT_TITLE_ICONS)) {
+        if (state.titles.includes(title)) state.titleIcons[title] = icon;
+      }
+      save(STORAGE.titleIcons, state.titleIcons);
+    }
     const savedDefault = load(STORAGE.defaultTitle, "");
     state.defaultTitle = typeof savedDefault === "string" ? savedDefault : "";
     clearDefaultIfMissing();
     state.theme = load(STORAGE.theme, "auto");
     applyTheme(state.theme);
 
+    mountStaticIcons();
     renderTitleButtons();
     renderHistory();
     wire();

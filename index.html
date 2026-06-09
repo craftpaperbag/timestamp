@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="auto">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#0017c1" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#000060" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f7fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1016" media="(prefers-color-scheme: dark)" />
     <title>timestamp</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,75 +17,94 @@
     <link rel="stylesheet" href="./css/style.css" />
   </head>
   <body>
-    <a class="skip-link" href="#main">本文へスキップ</a>
+    <a
+      class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-accent focus:shadow-lg"
+      href="#main"
+      >本文へスキップ</a
+    >
 
-    <header class="app-header">
-      <div class="app-header__inner">
-        <div class="app-header__brand">
-          <h1 class="app-title">
+    <header class="border-b border-line" style="padding-top: env(safe-area-inset-top)">
+      <div class="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-4 py-3">
+        <div class="flex min-w-0 items-baseline gap-2">
+          <h1 class="m-0 leading-none">
             <button
               type="button"
-              class="app-title__button"
+              class="cursor-pointer border-0 bg-transparent p-0 font-sans text-2xl font-bold tracking-wide text-accent hover:text-accent-strong"
               data-action="scroll-top"
               aria-label="先頭へ戻る"
             >
               timestamp
             </button>
           </h1>
-          <span id="app-version" class="app-version" aria-label="バージョン" hidden></span>
+          <span
+            id="app-version"
+            class="text-[11px] leading-none whitespace-nowrap text-ink-faint tabular-nums"
+            aria-label="バージョン"
+            hidden
+          ></span>
         </div>
-        <div class="app-header__actions">
+        <div class="flex gap-2">
           <button
             type="button"
-            class="header-action-btn"
+            class="btn btn-sm rounded-full"
             data-action="open-info"
             aria-label="ヘルプを開く"
           >
-            ヘルプ
+            <span data-icon="info" data-icon-class="size-4"></span>ヘルプ
           </button>
           <button
             type="button"
-            class="header-action-btn"
+            class="btn btn-sm rounded-full"
             data-action="open-settings"
             aria-label="設定を開く"
           >
-            設定
+            <span data-icon="settings" data-icon-class="size-4"></span>設定
           </button>
         </div>
       </div>
     </header>
 
-    <main id="main" class="app-main">
+    <main id="main" class="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-9 px-4 pt-4 pb-10">
       <section aria-labelledby="record-heading">
-        <h2 id="record-heading" class="section-heading visually-hidden">
-          記録する
-        </h2>
+        <h2 id="record-heading" class="section-label mb-2">記録する</h2>
         <div
           id="title-buttons"
-          class="title-buttons"
+          class="grid grid-cols-3 gap-2.5 sm:grid-cols-4"
           role="group"
           aria-label="記録ボタン"
         ></div>
-        <p id="title-empty" class="empty-note" hidden>
+        <p
+          id="title-empty"
+          class="m-0 rounded-xl border border-dashed border-line bg-surface p-4 text-sm text-ink-muted"
+          hidden
+        >
           記録ボタンがありません。設定からタイトルを追加してください。
         </p>
       </section>
 
       <section aria-labelledby="history-heading">
-        <div class="section-header">
-          <h2 id="history-heading" class="section-heading visually-hidden">
-            履歴
-          </h2>
-          <span id="history-count" class="muted" aria-live="polite">0件</span>
+        <div class="mb-2 flex items-baseline justify-between gap-2">
+          <h2 id="history-heading" class="section-label">履歴</h2>
+          <span id="history-count" class="text-xs text-ink-faint tabular-nums" aria-live="polite"
+            >0件</span
+          >
         </div>
-        <ul id="history-list" class="history-list" aria-live="polite"></ul>
-        <p id="history-empty" class="empty-note">まだ記録はありません。</p>
+        <ul id="history-list" class="m-0 flex list-none flex-col gap-2 p-0" aria-live="polite"></ul>
+        <p
+          id="history-empty"
+          class="m-0 rounded-xl border border-dashed border-line bg-surface p-4 text-sm text-ink-muted"
+        >
+          まだ記録はありません。
+        </p>
       </section>
     </main>
 
-    <footer class="app-footer">
+    <footer
+      class="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-4 py-3 text-sm"
+      style="padding-bottom: calc(1rem + env(safe-area-inset-bottom))"
+    >
       <a
-        class="muted"
+        class="text-ink-muted no-underline hover:text-accent"
         href="https://github.com/craftpaperbag/timestamp"
         target="_blank"
         rel="noopener noreferrer"
@@ -94,54 +113,39 @@
     </footer>
 
     <!-- Toast -->
-    <div
-      id="toast"
-      class="toast"
-      role="status"
-      aria-live="polite"
-      hidden
-    >
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden>
       <span id="toast-message" class="toast__message"></span>
-      <button
-        id="toast-action"
-        type="button"
-        class="toast__action"
-        hidden
-      ></button>
+      <button id="toast-action" type="button" class="toast__action" hidden></button>
     </div>
 
     <!-- Settings modal -->
     <dialog id="settings-dialog" class="dialog" aria-labelledby="settings-title">
-      <form method="dialog" class="dialog__form">
-        <header class="dialog__header">
-          <h2 id="settings-title" class="dialog__title">設定</h2>
+      <form method="dialog" class="dialog-form">
+        <header class="dialog-header">
+          <h2 id="settings-title" class="dialog-title">設定</h2>
           <button
             type="button"
-            class="icon-btn"
+            class="icon-ctl rounded-full"
             data-action="close-dialog"
             aria-label="設定を閉じる"
           >
-            <span aria-hidden="true">×</span>
-            <span class="icon-btn__label">閉じる</span>
+            <span data-icon="x" data-icon-class="size-5"></span>
           </button>
         </header>
 
-        <div class="dialog__body">
-          <section class="settings-group" aria-labelledby="settings-titles">
-            <h3 id="settings-titles" class="settings-group__title">
-              タイトル
-            </h3>
-            <p class="hint">
+        <div class="dialog-body">
+          <section class="flex flex-col gap-3" aria-labelledby="settings-titles">
+            <h3 id="settings-titles" class="m-0 text-base font-bold">タイトル</h3>
+            <p class="m-0 text-sm text-ink-muted">
               事前に登録したタイトルが、記録ボタンとして表示されます。
-              ラジオボタンで「起動時に自動で記録するタイトル」を指定できます。
+              アイコンをタップすると変更でき、ラジオボタンで「起動時に自動で記録するタイトル」を指定できます。
             </p>
-            <ul id="titles-list" class="titles-list"></ul>
-            <div class="title-add">
-              <label class="visually-hidden" for="title-add-input"
-                >追加するタイトル</label
-              >
+            <ul id="titles-list" class="m-0 flex list-none flex-col gap-2 p-0"></ul>
+            <div class="grid grid-cols-[1fr_auto] items-center gap-2">
+              <label class="sr-only" for="title-add-input">追加するタイトル</label>
               <input
                 id="title-add-input"
+                class="field-input"
                 type="text"
                 inputmode="text"
                 autocomplete="off"
@@ -149,149 +153,162 @@
                 placeholder="例: 水を飲んだ"
               />
               <button type="button" class="btn" data-action="add-title">
-                追加
+                <span data-icon="plus" data-icon-class="size-4"></span>追加
               </button>
             </div>
           </section>
 
-          <section class="settings-group" aria-labelledby="settings-theme">
-            <h3 id="settings-theme" class="settings-group__title">表示</h3>
-            <fieldset class="theme-select">
-              <legend class="visually-hidden">表示モード</legend>
-              <label>
-                <input type="radio" name="theme" value="auto" />
+          <section class="flex flex-col gap-3" aria-labelledby="settings-theme">
+            <h3 id="settings-theme" class="m-0 text-base font-bold">表示</h3>
+            <fieldset class="m-0 flex flex-col gap-2 border-0 p-0">
+              <legend class="sr-only">表示モード</legend>
+              <label
+                class="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border border-line-strong bg-surface px-3.5 py-2 hover:border-accent"
+              >
+                <input class="size-4 accent-accent" type="radio" name="theme" value="auto" />
                 <span>自動 (OSに合わせる)</span>
               </label>
-              <label>
-                <input type="radio" name="theme" value="light" />
+              <label
+                class="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border border-line-strong bg-surface px-3.5 py-2 hover:border-accent"
+              >
+                <input class="size-4 accent-accent" type="radio" name="theme" value="light" />
                 <span>ライト</span>
               </label>
-              <label>
-                <input type="radio" name="theme" value="dark" />
+              <label
+                class="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border border-line-strong bg-surface px-3.5 py-2 hover:border-accent"
+              >
+                <input class="size-4 accent-accent" type="radio" name="theme" value="dark" />
                 <span>ダーク</span>
               </label>
             </fieldset>
           </section>
 
-          <section class="settings-group" aria-labelledby="settings-data">
-            <h3 id="settings-data" class="settings-group__title">データ</h3>
-            <p class="hint">
+          <section class="flex flex-col gap-3" aria-labelledby="settings-data">
+            <h3 id="settings-data" class="m-0 text-base font-bold">データ</h3>
+            <p class="m-0 text-sm text-ink-muted">
               記録はこのブラウザにのみ保存されます。サーバーには送信されません。
             </p>
-            <div class="settings-actions">
+            <div class="flex flex-wrap gap-2">
               <button type="button" class="btn" data-action="export-json">
-                JSONエクスポート
+                <span data-icon="download" data-icon-class="size-4"></span>JSONエクスポート
               </button>
               <button type="button" class="btn" data-action="import-json">
-                JSONインポート
+                <span data-icon="upload" data-icon-class="size-4"></span>JSONインポート
               </button>
-              <button
-                type="button"
-                class="btn btn--danger"
-                data-action="delete-all"
-              >
-                全件削除
+              <button type="button" class="btn btn-danger" data-action="delete-all">
+                <span data-icon="trash-2" data-icon-class="size-4"></span>全件削除
               </button>
             </div>
-            <input
-              id="import-file"
-              type="file"
-              accept="application/json,.json"
-              hidden
-            />
+            <input id="import-file" type="file" accept="application/json,.json" hidden />
           </section>
         </div>
 
-        <footer class="dialog__footer">
-          <button type="submit" class="btn btn--primary">OK</button>
+        <footer class="dialog-footer">
+          <button type="submit" class="btn btn-primary">OK</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <!-- Icon picker modal -->
+    <dialog id="icon-dialog" class="dialog" aria-labelledby="icon-dialog-title">
+      <form method="dialog" class="dialog-form">
+        <header class="dialog-header">
+          <h2 id="icon-dialog-title" class="dialog-title">アイコンを選ぶ</h2>
+          <button
+            type="button"
+            class="icon-ctl rounded-full"
+            data-action="close-dialog"
+            aria-label="アイコン選択を閉じる"
+          >
+            <span data-icon="x" data-icon-class="size-5"></span>
+          </button>
+        </header>
+        <div class="dialog-body">
+          <p id="icon-dialog-target" class="m-0 text-sm text-ink-muted"></p>
+          <div
+            id="icon-choices"
+            class="grid grid-cols-5 justify-items-center gap-2"
+            role="group"
+            aria-label="アイコン一覧"
+          ></div>
+        </div>
+        <footer class="dialog-footer">
+          <button type="submit" class="btn btn-ghost">キャンセル</button>
         </footer>
       </form>
     </dialog>
 
     <!-- Edit modal -->
     <dialog id="edit-dialog" class="dialog" aria-labelledby="edit-title">
-      <form id="edit-form" method="dialog" class="dialog__form">
-        <header class="dialog__header">
-          <h2 id="edit-title" class="dialog__title">記録を編集</h2>
+      <form id="edit-form" method="dialog" class="dialog-form">
+        <header class="dialog-header">
+          <h2 id="edit-title" class="dialog-title">記録を編集</h2>
           <button
             type="button"
-            class="icon-btn"
+            class="icon-ctl rounded-full"
             data-action="close-dialog"
             aria-label="編集を閉じる"
           >
-            <span aria-hidden="true">×</span>
-            <span class="icon-btn__label">閉じる</span>
+            <span data-icon="x" data-icon-class="size-5"></span>
           </button>
         </header>
 
-        <div class="dialog__body">
+        <div class="dialog-body">
           <input type="hidden" name="id" />
-          <label class="field">
-            <span class="field__label">タイトル</span>
-            <input name="title" type="text" maxlength="64" required />
+          <label class="flex flex-col gap-1.5">
+            <span class="text-sm font-bold">タイトル</span>
+            <input class="field-input" name="title" type="text" maxlength="64" required />
           </label>
-          <div class="field">
-            <span class="field__label" id="edit-at-label">日時</span>
-            <div class="field-row">
+          <div class="flex flex-col gap-1.5">
+            <span class="text-sm font-bold" id="edit-at-label">日時</span>
+            <div class="flex flex-wrap items-stretch gap-2">
               <input
+                class="field-input min-w-0 flex-1 basis-48"
                 name="at"
                 type="datetime-local"
                 step="1"
                 required
                 aria-labelledby="edit-at-label"
               />
-              <button
-                type="button"
-                class="btn btn--small"
-                data-action="reset-edit-at"
-              >
+              <button type="button" class="btn btn-sm" data-action="reset-edit-at">
                 現在時刻に戻す
               </button>
             </div>
           </div>
         </div>
 
-        <footer class="dialog__footer dialog__footer--split">
-          <button
-            type="button"
-            class="btn btn--ghost"
-            data-action="close-dialog"
-          >
-            キャンセル
-          </button>
-          <button type="submit" class="btn btn--primary" value="save">
-            保存
-          </button>
+        <footer class="dialog-footer justify-between">
+          <button type="button" class="btn btn-ghost" data-action="close-dialog">キャンセル</button>
+          <button type="submit" class="btn btn-primary" value="save">保存</button>
         </footer>
       </form>
     </dialog>
 
     <!-- Info modal -->
     <dialog id="info-dialog" class="dialog" aria-labelledby="info-title">
-      <form method="dialog" class="dialog__form">
-        <header class="dialog__header">
-          <h2 id="info-title" class="dialog__title">このアプリについて</h2>
+      <form method="dialog" class="dialog-form">
+        <header class="dialog-header">
+          <h2 id="info-title" class="dialog-title">このアプリについて</h2>
           <button
             type="button"
-            class="icon-btn"
+            class="icon-ctl rounded-full"
             data-action="close-dialog"
             aria-label="閉じる"
           >
-            <span aria-hidden="true">×</span>
-            <span class="icon-btn__label">閉じる</span>
+            <span data-icon="x" data-icon-class="size-5"></span>
           </button>
         </header>
 
-        <div class="dialog__body">
-          <section class="info-section" aria-labelledby="info-howto">
-            <h3 id="info-howto" class="info-section__title">使い方</h3>
-            <ul class="info-list">
+        <div class="dialog-body">
+          <section class="flex flex-col gap-2" aria-labelledby="info-howto">
+            <h3 id="info-howto" class="m-0 text-base font-bold">使い方</h3>
+            <ul class="m-0 flex list-disc flex-col gap-2 pl-5 text-sm leading-relaxed">
               <li>
                 メイン画面のタイトルボタンを<strong>ワンタップ</strong>すると、
                 その瞬間の日時が履歴に記録されます。
               </li>
               <li>
-                記録ボタンの<strong>追加・並び替え・削除</strong>は
+                記録ボタンの<strong>追加・並び替え・削除・アイコン変更</strong>は
                 「設定 → タイトル」で行います。
               </li>
               <li>
@@ -305,17 +322,15 @@
               </li>
               <li>
                 バックアップが必要なときは「設定 → データ → JSONエクスポート」を
-                使ってください。記録に加えてタイトルや自動保存の設定も書き出され、
-                「JSONインポート」で復元・統合できます
+                使ってください。記録に加えてタイトル・アイコン・自動保存の設定も
+                書き出され、「JSONインポート」で復元・統合できます
                 (同じ記録は重複せず取り込まれます)。
               </li>
               <li>
-                <span id="install-hint"
-                  >ホーム画面に追加するとアプリのように使えます。</span
-                >
+                <span id="install-hint">ホーム画面に追加するとアプリのように使えます。</span>
                 <button
                   type="button"
-                  class="btn btn--small"
+                  class="btn btn-sm"
                   id="install-button"
                   data-action="install-app"
                   hidden
@@ -326,9 +341,9 @@
             </ul>
           </section>
 
-          <section class="info-section" aria-labelledby="info-data">
-            <h3 id="info-data" class="info-section__title">データと注意</h3>
-            <ul class="info-list">
+          <section class="flex flex-col gap-2" aria-labelledby="info-data">
+            <h3 id="info-data" class="m-0 text-base font-bold">データと注意</h3>
+            <ul class="m-0 flex list-disc flex-col gap-2 pl-5 text-sm leading-relaxed">
               <li>
                 ソースコードは
                 <a
@@ -341,44 +356,47 @@
               </li>
               <li>
                 記録はこのブラウザの
-                <code>localStorage</code> にのみ保存されます。
-                端末を変えると引き継がれません。サーバー送信もありません。
+                <code
+                  class="rounded bg-accent-soft px-1.5 py-0.5 font-mono text-[0.95em] text-accent"
+                  >localStorage</code
+                >
+                にのみ保存されます。 端末を変えると引き継がれません。サーバー送信もありません。
               </li>
-              <li role="alert" class="warning">
+              <li
+                role="alert"
+                class="-ml-5 list-none rounded-lg border border-warn-edge bg-warn-soft px-3.5 py-2.5 font-bold text-warn-ink"
+              >
                 タイトルには
-                <strong>個人情報・機密情報を入力しないでください</strong>。
+                <strong class="underline">個人情報・機密情報を入力しないでください</strong>。
                 ブラウザ拡張や端末を共有する他者から見える可能性があります。
               </li>
             </ul>
           </section>
         </div>
 
-        <footer class="dialog__footer">
-          <button type="submit" class="btn btn--primary">閉じる</button>
+        <footer class="dialog-footer">
+          <button type="submit" class="btn btn-primary">閉じる</button>
         </footer>
       </form>
     </dialog>
 
     <!-- Confirm modal -->
     <dialog id="confirm-dialog" class="dialog" aria-labelledby="confirm-title">
-      <form method="dialog" class="dialog__form">
-        <header class="dialog__header">
-          <h2 id="confirm-title" class="dialog__title">確認</h2>
+      <form method="dialog" class="dialog-form">
+        <header class="dialog-header">
+          <h2 id="confirm-title" class="dialog-title">確認</h2>
         </header>
-        <div class="dialog__body">
-          <p id="confirm-message"></p>
+        <div class="dialog-body">
+          <p id="confirm-message" class="m-0"></p>
         </div>
-        <footer class="dialog__footer dialog__footer--split">
-          <button type="submit" class="btn btn--ghost" value="cancel">
-            キャンセル
-          </button>
-          <button type="submit" class="btn btn--danger" value="ok">
-            実行
-          </button>
+        <footer class="dialog-footer justify-between">
+          <button type="submit" class="btn btn-ghost" value="cancel">キャンセル</button>
+          <button type="submit" class="btn btn-danger" value="ok">実行</button>
         </footer>
       </form>
     </dialog>
 
+    <script src="./js/icons.js" defer></script>
     <script src="./js/app.js" defer></script>
     <script>
       if ("serviceWorker" in navigator) {
